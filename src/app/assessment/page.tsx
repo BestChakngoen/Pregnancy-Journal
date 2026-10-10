@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import FloatingParticles from "@/components/FloatingParticles";
+import FloatingParticles from "@/components/ui/FloatingParticles";
 
 // Mock Questions for demonstration
 const QUESTIONS = [

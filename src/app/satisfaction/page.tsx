@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import FloatingParticles from "@/components/FloatingParticles";
+import FloatingParticles from "@/components/ui/FloatingParticles";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useUserStore } from "@/lib/userStore";

@@ -27,21 +27,22 @@ export default function AnimatedCard({
     <motion.button 
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center p-4 bg-white/50 backdrop-blur-md rounded-3xl",
-        "border border-white/60 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]",
-        "hover:bg-white/70 transition-colors text-center w-full group overflow-hidden"
+        "relative flex flex-col items-center p-4 backdrop-blur-md rounded-[1.75rem]",
+        colorClass, // <-- Apply the color class to the whole card!
+        "shadow-[0_8px_24px_-8px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.08)]",
+        "transition-all text-center w-full group overflow-hidden border border-white/40"
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, filter: "brightness(0.96)" }}
       whileTap={{ scale: 0.95 }}
     >
       {/* Shine effect on hover */}
       <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
 
       <motion.div 
-        className={cn("p-3 rounded-2xl mb-3 transition-transform group-hover:-translate-y-1 shadow-sm", colorClass)}
+        className={cn("p-3 rounded-2xl mb-3 transition-transform group-hover:-translate-y-1 shadow-sm bg-white/60")}
       >
         <Icon className={cn("w-6 h-6", iconColorClass)} />
       </motion.div>

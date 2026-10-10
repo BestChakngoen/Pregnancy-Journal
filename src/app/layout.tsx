@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Prompt } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
+import BottomNav from "@/components/layout/BottomNav";
 import { Toaster } from "react-hot-toast";
-import PopupAlert from "@/components/PopupAlert";
+import PopupAlert from "@/components/ui/PopupAlert";
 
 const promptFont = Prompt({
   variable: "--font-prompt",

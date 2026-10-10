@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { BookOpen, Video, PlayCircle, FileText, CheckCircle2, ChevronRight } from "lucide-react";
-import AnimatedCard from "@/components/AnimatedCard";
+import AnimatedCard from "@/components/ui/AnimatedCard";
 
 export default function EducationHub() {
   const router = useRouter();
@@ -51,7 +51,18 @@ export default function EducationHub() {
           <div className="flex flex-col gap-4">
             {/* E-Book Hero Card */}
             <motion.button 
-              onClick={() => router.push("/education/ebook")}
+              onClick={async () => {
+                try {
+                  if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                  }
+                  if (screen.orientation && 'lock' in screen.orientation) {
+                    // @ts-ignore
+                    await screen.orientation.lock('landscape');
+                  }
+                } catch (e) {}
+                router.push("/education/ebook");
+              }}
               className="relative overflow-hidden flex flex-col p-6 bg-gradient-to-br from-pink-100/80 to-blue-50/80 backdrop-blur-md rounded-3xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] group text-left w-full"
               whileHover={{ y: -2 }}
             >

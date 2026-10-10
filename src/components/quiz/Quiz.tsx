@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import FloatingParticles from "@/components/FloatingParticles";
+import FloatingParticles from "@/components/ui/FloatingParticles";
 
 const QUESTIONS = [
   { id: 1, text: "ภาวะความดันโลหิตสูง คือ ภาวะที่แรงดันเลือดในหลอดเลือดแดงสูงกว่าปกติ อย่างต่อเนื่อง โดยมีค่าความดันตั้งแต่ 140/90 มิลลิเมตรปรอท ขึ้นไป หากปล่อยไว้ โดยไม่รักษาจะทำให้หลอดเลือดเสียหายและเสี่ยงเกิดโรคแทรกซ้อนรุนแรง", answer: true },

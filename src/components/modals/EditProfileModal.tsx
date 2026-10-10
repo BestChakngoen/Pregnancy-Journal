@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, User, CalendarDays, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
-import FloatingParticles from "@/components/FloatingParticles";
+import FloatingParticles from "@/components/ui/FloatingParticles";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";

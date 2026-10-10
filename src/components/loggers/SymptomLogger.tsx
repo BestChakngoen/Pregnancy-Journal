@@ -25,7 +25,7 @@ const SYMPTOMS: Symptom[] = [
   { id: "fluid", label: "น้ำเดิน", emoji: "💧", isRedFlag: true },
 ];
 
-import FloatingParticles from "@/components/FloatingParticles";
+import FloatingParticles from "@/components/ui/FloatingParticles";
 
 interface SymptomLoggerProps {
   isOpen: boolean;

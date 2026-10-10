@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { User, Settings, LogOut, Heart, BellRing, CircleUserRound, ChevronRight } from "lucide-react";
 import { useUserStore } from "@/lib/userStore";
 import { useRouter } from "next/navigation";
-import EditProfileModal from "@/components/EditProfileModal";
-import HealthHistoryModal from "@/components/HealthHistoryModal";
+import EditProfileModal from "@/components/modals/EditProfileModal";
+import HealthHistoryModal from "@/components/modals/HealthHistoryModal";
 import { useAlertStore } from "@/lib/alertStore";
 
 export default function ProfilePage() {

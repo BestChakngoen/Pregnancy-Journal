@@ -1,17 +1,55 @@
 "use client";
 
+import { useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function EbookPage() {
   const router = useRouter();
 
+  useEffect(() => {
+    // พยายามบังคับหน้าจอให้เป็นแนวนอนเมื่อเข้ามาหน้านี้ (มือถือ)
+    const lockLandscape = async () => {
+      try {
+        if (screen.orientation && 'lock' in screen.orientation) {
+          // @ts-ignore
+          await screen.orientation.lock('landscape');
+        }
+      } catch (error) {
+        console.warn("Browser does not support auto-locking orientation without user interaction or full screen.", error);
+      }
+    };
+    
+    lockLandscape();
+
+    return () => {
+      // คืนค่าหน้าจอกลับเป็นปกติเมื่อออกจากหน้านี้
+      try {
+        if (screen.orientation && 'unlock' in screen.orientation) {
+          screen.orientation.unlock();
+        }
+      } catch (error) {}
+    };
+  }, []);
+
+  const handleBack = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      if (screen.orientation && 'unlock' in screen.orientation) {
+        screen.orientation.unlock();
+      }
+    } catch (e) {}
+    router.push("/education");
+  };
+
   return (
     <div className="flex flex-col min-h-dvh bg-slate-900">
       {/* Header */}
       <header className="flex items-center p-4 bg-white/90 backdrop-blur-md shadow-sm shrink-0 relative z-10">
         <button 
-          onClick={() => router.back()} 
+          onClick={handleBack} 
           className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors"
         >
           <ChevronLeft className="w-6 h-6 text-slate-700" />

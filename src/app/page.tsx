@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AnimatedRing from "@/components/AnimatedRing";
-import AnimatedCard from "@/components/AnimatedCard";
-import SymptomLogger from "@/components/SymptomLogger";
-import RedFlagAlert from "@/components/RedFlagAlert";
+import AnimatedRing from "@/components/ui/AnimatedRing";
+import AnimatedCard from "@/components/ui/AnimatedCard";
+import SymptomLogger from "@/components/loggers/SymptomLogger";
+import RedFlagAlert from "@/components/ui/RedFlagAlert";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { PenSquare, Calendar, AlertTriangle, Lightbulb, ChevronRight, User, Bell, Home, Activity, BookOpen, Loader2 } from "lucide-react";
-import BloodPressureLogger from "@/components/BloodPressureLogger";
+import BloodPressureLogger from "@/components/loggers/BloodPressureLogger";
 import { useUserStore } from "@/lib/userStore";
 
 export default function Dashboard() {
@@ -94,7 +94,7 @@ export default function Dashboard() {
 
         {/* Baby Size - High Quality Asset */}
         <section className="flex flex-col">
-          <div className="relative w-full h-[220px] rounded-[2rem] overflow-hidden shadow-sm border border-white/60 group cursor-pointer">
+          <div className="relative w-full h-[220px] rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] group cursor-pointer">
             <Image 
               src="/images/lemon.jpg" 
               alt={`Baby size at week ${user.gestationalWeeks}`} 
@@ -127,7 +127,7 @@ export default function Dashboard() {
               title="บันทึกอาการ"
               subtitle="วันนี้: ปกติ"
               icon={PenSquare}
-              colorClass="bg-pink-100/80 border-pink-200/50"
+              colorClass="bg-pink-100"
               iconColorClass="text-pink-600"
               delay={0.1}
               onClick={() => setIsLoggerOpen(true)}
@@ -136,7 +136,7 @@ export default function Dashboard() {
               title="ความดัน"
               subtitle="บันทึกค่า"
               icon={Activity}
-              colorClass="bg-indigo-100/80 border-indigo-200/50"
+              colorClass="bg-indigo-100"
               iconColorClass="text-indigo-600"
               delay={0.15}
               onClick={() => setIsBPLoggerOpen(true)}
@@ -145,7 +145,7 @@ export default function Dashboard() {
               title="ตารางนัด"
               subtitle="18 ต.ค."
               icon={Calendar}
-              colorClass="bg-blue-100/80 border-blue-200/50"
+              colorClass="bg-blue-100"
               iconColorClass="text-blue-600"
               delay={0.2}
               onClick={() => router.push("/tracking")}
@@ -154,7 +154,7 @@ export default function Dashboard() {
               title="ฉุกเฉิน"
               subtitle="1669"
               icon={AlertTriangle}
-              colorClass="bg-red-100/80 border-red-200/50"
+              colorClass="bg-red-100"
               iconColorClass="text-red-600"
               delay={0.3}
               onClick={() => { window.location.href = "tel:1669"; }}
@@ -163,7 +163,7 @@ export default function Dashboard() {
         </section>
 
         {/* Daily Tip */}
-        <section className="flex items-center justify-between p-5 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl shadow-sm hover:bg-white/70 transition-all cursor-pointer active:scale-[0.98]">
+        <section className="flex items-center justify-between p-5 bg-gradient-to-r from-yellow-50 to-orange-50/30 border border-white/60 backdrop-blur-md rounded-[1.5rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:brightness-95 transition-all cursor-pointer active:scale-[0.98]">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-yellow-100/80 rounded-xl">
               <Lightbulb className="w-5 h-5 text-yellow-600" />

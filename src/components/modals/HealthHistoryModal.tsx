@@ -8,7 +8,7 @@ import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
 import { cn } from "@/lib/utils";
-import FloatingParticles from "@/components/FloatingParticles";
+import FloatingParticles from "@/components/ui/FloatingParticles";
 
 interface HealthHistoryModalProps {
   isOpen: boolean;

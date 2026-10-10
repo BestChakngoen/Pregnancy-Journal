@@ -5,7 +5,7 @@ import { motion, Variants } from "framer-motion";
 import { Activity, HeartPulse, Scale, Footprints, ChevronRight, Plus, Droplet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTrackingStore } from "@/lib/trackingStore";
-import { BloodPressureModal, WeightModal } from "@/components/TrackingModals";
+import { BloodPressureModal, WeightModal } from "@/components/modals/TrackingModals";
 
 // Framer Motion Variants for Staggered Entrance
 const containerVariants: Variants = {
