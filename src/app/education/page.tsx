@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { BookOpen, Video, PlayCircle, FileText, CheckCircle2, ChevronRight } from "lucide-react";
 import AnimatedCard from "@/components/AnimatedCard";
 
 export default function EducationHub() {
+  const router = useRouter();
+  
   return (
     <div className="pb-24">
       {/* Header */}
@@ -21,7 +24,10 @@ export default function EducationHub() {
             <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold">1</span>
             <h3 className="font-semibold text-slate-800/90">ทดสอบก่อนเรียน</h3>
           </div>
-          <button className="w-full flex items-center justify-between p-4 bg-white/60 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]">
+          <button 
+            onClick={() => router.push("/pre-test")}
+            className="w-full flex items-center justify-between p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]"
+          >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-100/80 rounded-2xl">
                 <FileText className="w-6 h-6 text-blue-600" />
@@ -44,11 +50,9 @@ export default function EducationHub() {
           
           <div className="flex flex-col gap-4">
             {/* E-Book Hero Card */}
-            <motion.a 
-              href="https://heyzine.com/flip-book/7256b18e3e.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative overflow-hidden flex flex-col p-6 bg-gradient-to-br from-pink-100/80 to-blue-50/80 backdrop-blur-md rounded-3xl border border-white/60 shadow-sm hover:shadow-md transition-all active:scale-[0.98] group"
+            <motion.button 
+              onClick={() => router.push("/education/ebook")}
+              className="relative overflow-hidden flex flex-col p-6 bg-gradient-to-br from-pink-100/80 to-blue-50/80 backdrop-blur-md rounded-3xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] group text-left w-full"
               whileHover={{ y: -2 }}
             >
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-pink-200/50 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
@@ -63,10 +67,13 @@ export default function EducationHub() {
               <div className="flex items-center gap-2 text-pink-600 font-semibold text-sm relative z-10">
                 อ่านเลย <ChevronRight className="w-4 h-4" />
               </div>
-            </motion.a>
+            </motion.button>
 
             {/* Video Series */}
-            <button className="w-full flex items-center justify-between p-4 bg-white/60 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]">
+            <button 
+              onClick={() => router.push("/videos")}
+              className="w-full flex items-center justify-between p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]"
+            >
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-purple-100/80 rounded-2xl">
                   <PlayCircle className="w-6 h-6 text-purple-600" />
@@ -95,6 +102,7 @@ export default function EducationHub() {
               colorClass="bg-emerald-100/80"
               iconColorClass="text-emerald-600"
               delay={0.1}
+              onClick={() => router.push("/post-test")}
             />
             <AnimatedCard
               title="ประเมินความพอใจ"
@@ -103,6 +111,7 @@ export default function EducationHub() {
               colorClass="bg-amber-100/80"
               iconColorClass="text-amber-600"
               delay={0.2}
+              onClick={() => router.push("/satisfaction")}
             />
           </div>
         </section>

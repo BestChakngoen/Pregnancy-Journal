@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Prompt } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import { Toaster } from "react-hot-toast";
+import PopupAlert from "@/components/PopupAlert";
 
 const promptFont = Prompt({
   variable: "--font-prompt",
@@ -22,6 +24,23 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${promptFont.variable} font-sans antialiased`}>
       <body className="min-h-dvh flex flex-col items-center">
+        <PopupAlert />
+        <Toaster 
+          position="top-center" 
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              color: '#334155',
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              borderRadius: '20px',
+              padding: '16px',
+              fontWeight: 600,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            },
+          }}
+        />
         {/* We use a max-w container to simulate mobile view on desktop */}
         <div className="w-full max-w-md bg-white/30 backdrop-blur-3xl min-h-dvh shadow-sm overflow-x-hidden relative">
           

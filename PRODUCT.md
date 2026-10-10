@@ -29,4 +29,4 @@
 6. **Admin Dashboard:**
    - สำหรับเจ้าหน้าที่ดูข้อมูลหลังบ้านและ Export เป็น PDF
 7. **Infrastructure:**
-   - Deploy ขึ้น Vercel
+   - Deploy ขึ้น Netlify

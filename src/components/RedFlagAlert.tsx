@@ -35,7 +35,7 @@ export default function RedFlagAlert({ isOpen, onClose, symptomName }: RedFlagAl
                 stiffness: 300,
                 mass: 0.8
               }}
-              className="bg-red-50 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-red-100 pointer-events-auto relative overflow-hidden"
+              className="bg-red-50 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border-red-100 pointer-events-auto relative overflow-hidden"
             >
               {/* Top accent line */}
               <div className="absolute top-0 left-0 w-full h-2 bg-red-400" />
@@ -65,7 +65,7 @@ export default function RedFlagAlert({ isOpen, onClose, symptomName }: RedFlagAl
                     <PhoneCall className="w-5 h-5" />
                     โทรด่วน: โรงพยาบาล
                   </button>
-                  <button className="flex items-center justify-center gap-2 w-full py-3.5 bg-white text-slate-700 rounded-2xl font-medium shadow-sm border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all">
+                  <button className="flex items-center justify-center gap-2 w-full py-3.5 bg-white text-slate-700 rounded-2xl font-medium shadow-sm hover:bg-slate-50 active:scale-95 transition-all">
                     <PhoneCall className="w-5 h-5" />
                     โทรด่วน: สามี/ญาติ
                   </button>

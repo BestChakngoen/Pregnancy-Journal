@@ -1,0 +1,440 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Activity, AlertTriangle, TrendingUp, Scale, Baby, Droplets, Stethoscope } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { useUserStore } from "@/lib/userStore";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
+import { cn } from "@/lib/utils";
+import FloatingParticles from "@/components/FloatingParticles";
+
+interface HealthHistoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface BPLog {
+  timestamp: string;
+  systolic: number;
+  diastolic: number;
+  isHighRisk: boolean;
+  displayDate?: string;
+}
+
+type TabType = "bp" | "weight" | "kicks" | "water" | "symptoms";
+
+const TABS = [
+  { id: "bp", label: "ความดัน", icon: Activity },
+  { id: "weight", label: "น้ำหนัก", icon: Scale },
+  { id: "kicks", label: "ลูกดิ้น", icon: Baby },
+  { id: "water", label: "น้ำดื่ม", icon: Droplets },
+  { id: "symptoms", label: "อาการ", icon: Stethoscope }
+];
+
+export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryModalProps) {
+  const { user } = useUserStore();
+  const [activeTab, setActiveTab] = useState<TabType>("bp");
+  
+  // BP State
+  const [logs, setLogs] = useState<BPLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (isOpen && user?.name && activeTab === "bp") {
+      fetchLogs();
+    }
+  }, [isOpen, user, activeTab]);
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    try {
+      const logsRef = collection(db, "users", user!.name.toLowerCase(), "bloodPressures");
+      const q = query(logsRef, orderBy("timestamp", "asc"), limit(30));
+      const snapshot = await getDocs(q);
+      
+      const fetchedLogs: BPLog[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const date = new Date(data.timestamp);
+        fetchedLogs.push({
+          ...data,
+          systolic: data.systolic,
+          diastolic: data.diastolic,
+          isHighRisk: data.isHighRisk,
+          displayDate: `${date.getDate()}/${date.getMonth() + 1}`,
+        } as BPLog);
+      });
+
+      if (fetchedLogs.length > 0) {
+        setLogs(fetchedLogs);
+      } else {
+        setLogs(generateMockBPData());
+      }
+    } catch (err) {
+      setLogs(generateMockBPData());
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateMockBPData = () => {
+    const mock = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const sys = 110 + Math.floor(Math.random() * 25);
+      const dia = 70 + Math.floor(Math.random() * 15);
+      mock.push({
+        timestamp: d.toISOString(),
+        systolic: sys,
+        diastolic: dia,
+        isHighRisk: sys >= 140 || dia >= 90,
+        displayDate: `${d.getDate()}/${d.getMonth() + 1}`
+      });
+    }
+    return mock;
+  };
+
+  const latestBP = logs[logs.length - 1];
+  const isBPDanger = latestBP?.isHighRisk;
+
+  // Mock Data for other tabs
+  const mockWeightData = [
+    { date: "1 ต.ค.", weight: 60.2 },
+    { date: "3 ต.ค.", weight: 60.5 },
+    { date: "5 ต.ค.", weight: 60.8 },
+    { date: "7 ต.ค.", weight: 61.2 },
+    { date: "10 ต.ค.", weight: 61.5 },
+  ];
+
+  const mockKicksData = [
+    { date: "6 ต.ค.", count: 12 },
+    { date: "7 ต.ค.", count: 15 },
+    { date: "8 ต.ค.", count: 10 },
+    { date: "9 ต.ค.", count: 14 },
+    { date: "10 ต.ค.", count: 11 },
+  ];
+
+  const mockWaterData = [
+    { date: "6 ต.ค.", glasses: 8 },
+    { date: "7 ต.ค.", glasses: 6 },
+    { date: "8 ต.ค.", glasses: 9 },
+    { date: "9 ต.ค.", glasses: 10 },
+    { date: "10 ต.ค.", glasses: 8 },
+  ];
+
+  const mockSymptoms = [
+    { date: "10 ต.ค. 2566", time: "14:30", items: ["แพ้ท้อง 🤢", "อ่อนเพลีย 🥱"] },
+    { date: "9 ต.ค. 2566", time: "09:15", items: ["ปวดหัว 🤕"] },
+    { date: "7 ต.ค. 2566", time: "20:00", items: ["ปวดหลัง 💥", "แพ้ท้อง 🤢"] },
+  ];
+
+  const renderBP = () => (
+    <>
+      {latestBP && (
+        <div className={cn(
+          "p-6 rounded-[2rem] flex items-center justify-between shadow-sm relative overflow-hidden shrink-0",
+          isBPDanger ? "bg-red-50/80 border border-white/60" : "bg-gradient-to-br from-blue-50/80 to-pink-50/80 border border-white/60"
+        )}>
+          {isBPDanger && <FloatingParticles count={10} />}
+          <div className="relative z-10 flex flex-col">
+            <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
+              {isBPDanger ? <AlertTriangle className="w-4 h-4 text-red-500" /> : <Activity className="w-4 h-4 text-blue-500" />}
+              ความดันล่าสุด ({latestBP.displayDate})
+            </span>
+            <div className="flex items-end gap-1.5">
+              <span className={cn("text-4xl font-bold tracking-tight tabular-nums", isBPDanger ? "text-red-600" : "text-slate-800")}>
+                {latestBP.systolic}/{latestBP.diastolic}
+              </span>
+              <span className="text-sm font-semibold text-slate-500 mb-1.5">mmHg</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-pink-500" />
+          แนวโน้มย้อนหลัง 7 วัน
+        </h3>
+        
+        {isLoading ? (
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="h-[220px] w-full -ml-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={logs} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
+                <ReferenceLine y={90} stroke="#fca5a5" strokeDasharray="4 4" />
+                <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} domain={['dataMin - 10', 'dataMax + 10']} />
+                <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} labelStyle={{ fontWeight: 'bold', color: '#334155', marginBottom: '4px' }} itemStyle={{ fontWeight: 600, fontSize: '14px' }} />
+                <Line type="monotone" dataKey="systolic" name="SYS" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
+                <Line type="monotone" dataKey="diastolic" name="DIA" stroke="#f472b6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#f472b6', stroke: '#fff', strokeWidth: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        
+        <div className="flex items-center justify-center gap-6 mt-6 text-xs font-semibold text-slate-500">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> ตัวบน (SYS)
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.5)]" /> ตัวล่าง (DIA)
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-orange-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+        <p className="text-xs text-orange-800/90 leading-relaxed font-semibold">
+          * ค่าความดันปกติควรต่ำกว่า 120/80 mmHg <br/>
+          * หากค่าตัวใดตัวหนึ่งสูงกว่า <span className="font-bold text-red-600 bg-red-100/50 px-1 py-0.5 rounded-md">140/90 mmHg</span> ถือว่ามีความเสี่ยงครรภ์เป็นพิษ
+        </p>
+      </div>
+    </>
+  );
+
+  const renderWeight = () => (
+    <>
+      <div className="p-6 rounded-[2rem] flex items-center justify-between shadow-sm relative overflow-hidden shrink-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 border border-white/60">
+        <div className="relative z-10 flex flex-col">
+          <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
+            <Scale className="w-4 h-4 text-emerald-500" />
+            น้ำหนักล่าสุด (10 ต.ค.)
+          </span>
+          <div className="flex items-end gap-1.5">
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">
+              61.5
+            </span>
+            <span className="text-sm font-semibold text-slate-500 mb-1.5">กก.</span>
+          </div>
+          <p className="text-xs font-medium text-emerald-600 mt-1">+0.3 กก. จากสัปดาห์ที่แล้ว</p>
+        </div>
+      </div>
+
+      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-emerald-500" />
+          แนวโน้มน้ำหนัก
+        </h3>
+        <div className="h-[220px] w-full -ml-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={mockWeightData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} domain={['dataMin - 1', 'dataMax + 1']} />
+              <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+              <Line type="monotone" dataKey="weight" name="น้ำหนัก" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="bg-emerald-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+        <p className="text-xs text-emerald-800/90 leading-relaxed font-semibold">
+          * น้ำหนักควรขึ้นประมาณ 1-2 กิโลกรัมต่อเดือนในไตรมาสที่ 2 และ 3
+        </p>
+      </div>
+    </>
+  );
+
+  const renderKicks = () => (
+    <>
+      <div className="p-6 rounded-[2rem] flex items-center justify-between shadow-sm relative overflow-hidden shrink-0 bg-gradient-to-br from-purple-50/80 to-fuchsia-50/80 border border-white/60">
+        <div className="relative z-10 flex flex-col">
+          <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
+            <Baby className="w-4 h-4 text-purple-500" />
+            ลูกดิ้นวันนี้
+          </span>
+          <div className="flex items-end gap-1.5">
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">
+              11
+            </span>
+            <span className="text-sm font-semibold text-slate-500 mb-1.5">ครั้ง</span>
+          </div>
+          <p className="text-xs font-medium text-purple-600 mt-1">อยู่ในเกณฑ์ปกติ 💖</p>
+        </div>
+      </div>
+
+      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-purple-500" />
+          สถิติการดิ้นย้อนหลัง
+        </h3>
+        <div className="h-[220px] w-full -ml-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={mockKicksData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <ReferenceLine y={10} stroke="#fca5a5" strokeDasharray="4 4" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} />
+              <Tooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+              <Bar dataKey="count" name="จำนวนครั้ง" fill="#d946ef" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="bg-orange-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+        <p className="text-xs text-orange-800/90 leading-relaxed font-semibold">
+          * ลูกควรดิ้นไม่ต่ำกว่า <span className="font-bold text-red-600">10 ครั้ง</span> ใน 2 ชั่วโมงหลังอาหาร
+        </p>
+      </div>
+    </>
+  );
+
+  const renderWater = () => (
+    <>
+      <div className="p-6 rounded-[2rem] flex items-center justify-between shadow-sm relative overflow-hidden shrink-0 bg-gradient-to-br from-cyan-50/80 to-blue-50/80 border border-white/60">
+        <div className="relative z-10 flex flex-col w-full">
+          <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
+            <Droplets className="w-4 h-4 text-cyan-500" />
+            ดื่มน้ำวันนี้
+          </span>
+          <div className="flex items-end gap-1.5">
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">
+              8
+            </span>
+            <span className="text-sm font-semibold text-slate-500 mb-1.5">แก้ว</span>
+          </div>
+          <div className="w-full h-2.5 bg-white/60 rounded-full mt-4 overflow-hidden shadow-inner">
+            <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 w-[80%] rounded-full shadow-sm" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-cyan-500" />
+          ประวัติการดื่มน้ำ
+        </h3>
+        <div className="h-[220px] w-full -ml-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={mockWaterData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <ReferenceLine y={8} stroke="#93c5fd" strokeDasharray="4 4" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} />
+              <Tooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+              <Bar dataKey="glasses" name="แก้ว" fill="#22d3ee" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      
+      <div className="bg-cyan-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+        <p className="text-xs text-cyan-800/90 leading-relaxed font-semibold">
+          * ดื่มน้ำอย่างน้อย 8-10 แก้วต่อวัน ป้องกันภาวะขาดน้ำและช่วยสร้างน้ำคร่ำ
+        </p>
+      </div>
+    </>
+  );
+
+  const renderSymptoms = () => (
+    <>
+      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
+          <Stethoscope className="w-4 h-4 text-rose-500" />
+          ประวัติอาการล่าสุด
+        </h3>
+        
+        <div className="flex flex-col gap-0">
+          {mockSymptoms.map((record, i) => (
+            <div key={i} className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <div className="w-3 h-3 rounded-full bg-rose-400 ring-4 ring-rose-100" />
+                {i !== mockSymptoms.length - 1 && <div className="w-0.5 h-full bg-slate-200 mt-2 min-h-[40px]" />}
+              </div>
+              <div className="pb-6 w-full mt-[-4px]">
+                <div className="flex justify-between items-baseline mb-3">
+                  <p className="text-sm font-bold text-slate-700">{record.date}</p>
+                  <p className="text-xs font-semibold text-slate-400">{record.time}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {record.items.map((item, j) => (
+                    <span key={j} className="px-3 py-1.5 bg-white border border-white/80 rounded-xl text-sm font-semibold text-slate-600 shadow-sm">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+            onClick={onClose}
+          />
+
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/90 backdrop-blur-2xl rounded-t-[2rem] shadow-[0_-8px_32px_rgba(0,0,0,0.08)] z-50 flex flex-col h-[85vh] border-t border-white/60 overflow-hidden"
+          >
+            {/* Handle Bar */}
+            <div className="w-full flex justify-center pt-4 pb-2 shrink-0 cursor-pointer" onClick={onClose}>
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
+            </div>
+
+            {/* Header */}
+            <div className="px-6 pb-4 flex justify-between items-center shrink-0">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-800">ประวัติสุขภาพ</h2>
+                <p className="text-sm font-medium text-slate-500 mt-1">ติดตามข้อมูลสุขภาพของคุณแม่</p>
+              </div>
+              <button onClick={onClose} className="w-11 h-11 flex items-center justify-center bg-slate-100/80 rounded-full text-slate-500 hover:bg-slate-200 transition-colors" aria-label="ปิด">
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="px-6 pb-4 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex items-center gap-2 w-max">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as TabType)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all whitespace-nowrap",
+                      activeTab === tab.id 
+                        ? "bg-slate-800 text-white shadow-md shadow-slate-800/20" 
+                        : "bg-white/60 border border-white/60 text-slate-500 hover:bg-white/90 shadow-sm"
+                    )}
+                  >
+                    <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-pink-400" : "text-slate-400")} />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Scrollable Area */}
+            <div className="flex-1 overflow-y-auto px-6 pb-8 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {activeTab === "bp" && renderBP()}
+              {activeTab === "weight" && renderWeight()}
+              {activeTab === "kicks" && renderKicks()}
+              {activeTab === "water" && renderWater()}
+              {activeTab === "symptoms" && renderSymptoms()}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

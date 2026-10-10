@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { ChevronRight, Baby, User, CalendarDays, Activity, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import toast from "react-hot-toast";
+import { useAlertStore } from "@/lib/alertStore";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -35,11 +38,15 @@ export default function Onboarding() {
         const userData = userSnap.data();
         loginOrSaveUser({
           name: userData.name,
-          age: userData.age,
-          gestationalWeeks: userData.gestationalWeeks,
-          gravida: userData.gravida,
+          age: userData.age || formData.age,
+          gestationalWeeks: userData.gestationalWeeks || formData.gestationalWeeks,
+          gravida: userData.gravida || formData.gravida,
         });
-        alert(`ยินดีต้อนรับกลับมาค่ะ คุณแม่${userData.name}!`);
+        useAlertStore.getState().showAlert({
+          type: "success",
+          title: "ยินดีต้อนรับกลับมาค่ะ",
+          message: `คุณแม่ ${userData.name}`,
+        });
       } else {
         // ถ้ายังไม่มี ให้สร้างใหม่
         const newProfile = {
@@ -57,35 +64,51 @@ export default function Onboarding() {
           gestationalWeeks: newProfile.gestationalWeeks,
           gravida: newProfile.gravida,
         });
-        alert(`สร้างโปรไฟล์สำเร็จ! ยินดีต้อนรับคุณแม่${newProfile.name}ค่ะ`);
+        useAlertStore.getState().showAlert({
+          type: "success",
+          title: "สร้างโปรไฟล์สำเร็จ!",
+          message: `ยินดีต้อนรับคุณแม่ ${newProfile.name} สู่ระบบของเราค่ะ`,
+        });
       }
       
       router.push("/");
     } catch (error) {
       console.error("Error saving user:", error);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล โปรดตรวจสอบการตั้งค่า Firebase");
+      // Fallback: Save locally if Firebase fails
+      const localProfile = {
+        name: formData.name.trim(),
+        age: formData.age,
+        gestationalWeeks: formData.gestationalWeeks,
+        gravida: formData.gravida,
+      };
+      loginOrSaveUser(localProfile);
+      useAlertStore.getState().showAlert({
+        type: "warning",
+        title: "โหมดใช้งานออฟไลน์",
+        message: "ไม่สามารถเชื่อมต่อฐานข้อมูลได้ ระบบจะบันทึกข้อมูลในเครื่องของคุณแทน",
+      });
+      router.push("/");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const inputClasses = "w-full p-4 bg-white/60 backdrop-blur-sm border border-white/80 rounded-2xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-sm";
+  const inputClasses = "w-full p-4 bg-white/60 backdrop-blur-sm  rounded-2xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-sm";
   const labelClasses = "block text-sm font-semibold text-slate-700/90 mb-2 ml-1 flex items-center gap-2";
 
   return (
-    <div className="min-h-dvh flex flex-col pt-12 pb-8 px-6 relative">
+    <div className="min-h-dvh flex flex-col pt-12 pb-12 px-6 relative">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-200/40 rounded-full blur-3xl -z-10 -translate-x-1/3 translate-y-1/3" />
 
-      <header className="mb-8">
+      <header className="mb-6">
         <motion.div 
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="w-full h-56 rounded-[2rem] overflow-hidden shadow-sm mb-6 relative"
+          className="w-full h-64 sm:h-72 mb-6 relative shrink-0"
         >
-          <img src="/images/mother.jpg" alt="Pregnant mother illustration" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-pink-100/40 to-transparent mix-blend-overlay" />
+          <Image src="/images/mother-minimalist.jpg" alt="Minimalist pregnant mother illustration" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain mix-blend-multiply drop-shadow-sm" />
         </motion.div>
         <motion.h1 
           initial={{ y: 20, opacity: 0 }}
@@ -178,11 +201,11 @@ export default function Onboarding() {
           </select>
         </div>
 
-        <div className="mt-auto pt-8">
+        <div className="mt-6 pb-6">
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100"
+            className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 shrink-0"
           >
             {isLoading ? (
               <>

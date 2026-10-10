@@ -14,8 +14,8 @@ export default function AnimatedRing({ week, daysToGo }: { week: number; daysToG
       <div className="relative w-56 h-56">
         {/* Glowing Background Effect */}
         <motion.div 
-          className="absolute inset-0 bg-pink-300 rounded-full blur-3xl opacity-20"
-          animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.3, 0.2] }}
+          className="absolute inset-[-20%] bg-[radial-gradient(circle,rgba(249,168,212,0.4)_0%,transparent_60%)] rounded-full"
+          animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
         
@@ -26,27 +26,29 @@ export default function AnimatedRing({ week, daysToGo }: { week: number; daysToG
             cy="50"
             r="45"
             fill="none"
-            stroke="#fce7f3"
+            stroke="currentColor"
             strokeWidth="6"
+            className="text-pink-100"
           />
           <motion.circle
             cx="50"
             cy="50"
             r="45"
             fill="none"
-            stroke="#f472b6"
+            stroke="currentColor"
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset }}
             transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+            className="text-pink-400"
           />
         </svg>
         
         {/* Inner Content */}
         <motion.div 
-          className="absolute inset-0 flex items-center justify-center flex-col bg-white/20 rounded-full m-5 shadow-[inset_0_0_20px_rgba(255,255,255,0.8)] backdrop-blur-md z-20 border border-white/80"
+          className="absolute inset-0 flex items-center justify-center flex-col bg-white/20 rounded-full m-5 shadow-[inset_0_0_20px_rgba(255,255,255,0.8)] backdrop-blur-md z-20"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}

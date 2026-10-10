@@ -15,10 +15,12 @@ export default function BottomNav() {
     { href: "/profile", label: "โปรไฟล์", icon: User },
   ];
 
-  if (pathname === "/onboarding" || pathname?.startsWith("/assessment")) return null;
+  const hiddenPaths = ["/onboarding", "/assessment", "/pre-test", "/post-test", "/satisfaction", "/admin", "/education/ebook"];
+  const isHidden = hiddenPaths.some(p => pathname?.startsWith(p));
+  if (isHidden) return null;
 
   return (
-    <nav className="fixed bottom-0 w-full max-w-md bg-white/80 backdrop-blur-xl border-t border-white/60 pb-safe pt-2 px-6 flex justify-between z-40">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/80 backdrop-blur-xl pb-safe pt-2 px-6 flex justify-between z-40 border-t border-slate-100/50">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         const Icon = item.icon;

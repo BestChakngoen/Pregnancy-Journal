@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+import FloatingParticles from "@/components/FloatingParticles";
 
 // Mock Questions for demonstration
 const QUESTIONS = [
@@ -45,24 +47,38 @@ export default function Assessment() {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const totalSteps = QUESTIONS.length;
   const progressPercent = ((currentStep) / totalSteps) * 100;
 
   const handleAnswer = (val: boolean) => {
     setAnswers((prev) => ({ ...prev, [QUESTIONS[currentStep].id]: val }));
+    setIsAdvancing(true);
     
-    // Auto proceed
-    setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    
+    // Auto proceed with visual delay
+    timerRef.current = setTimeout(() => {
+      setIsAdvancing(false);
       if (currentStep < totalSteps - 1) {
-        setCurrentStep(currentStep + 1);
+        setCurrentStep(prev => prev + 1);
       } else {
         setIsFinished(true);
       }
-    }, 300);
+    }, 150);
   };
 
   const handleBack = () => {
+    setIsAdvancing(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     } else {
@@ -105,12 +121,13 @@ export default function Assessment() {
     const result = calculateRisk();
     return (
       <div className="min-h-dvh flex flex-col bg-slate-50 pt-12 pb-8 px-6">
+        {result.totalRisk < 2 && <FloatingParticles count={20} />}
         <h1 className="text-2xl font-bold text-slate-800 text-center mb-8">สรุปผลการประเมิน</h1>
         
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className={cn("rounded-3xl p-8 flex flex-col items-center text-center shadow-sm border border-white", result.bg)}
+          className={cn("rounded-3xl p-8 flex flex-col items-center text-center shadow-sm ", result.bg)}
         >
           {result.icon}
           <h2 className={cn("text-2xl font-bold mt-4 mb-1", result.color)}>{result.level}</h2>
@@ -122,7 +139,7 @@ export default function Assessment() {
             <h3 className="font-semibold text-slate-800/90 mb-3 ml-1">ปัจจัยเสี่ยงที่พบ:</h3>
             <ul className="flex flex-col gap-2">
               {result.riskDetails.map((detail, idx) => (
-                <li key={idx} className="bg-white/60 backdrop-blur-sm p-4 rounded-xl border border-slate-100 flex items-center gap-3 shadow-sm">
+                <li key={idx} className="bg-white/60 backdrop-blur-sm p-4 rounded-xl flex items-center gap-3 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-red-400" />
                   <span className="text-slate-700 text-sm font-medium">{detail}</span>
                 </li>
@@ -149,8 +166,8 @@ export default function Assessment() {
     <div className="min-h-dvh flex flex-col pt-safe pb-8 relative overflow-hidden bg-slate-50">
       {/* Header & Progress */}
       <header className="px-4 py-4 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
-        <button onClick={handleBack} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
-          <ChevronLeft className="w-6 h-6" />
+        <button onClick={handleBack} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors" aria-label="ย้อนกลับ">
+          <ChevronLeft className="w-6 h-6" aria-hidden="true" />
         </button>
         <div className="text-sm font-semibold text-slate-500 tabular-nums tracking-wide">
           ข้อ {currentStep + 1} / {totalSteps}
@@ -187,17 +204,43 @@ export default function Assessment() {
             <div className="mt-12 flex flex-col gap-4">
               <button
                 onClick={() => handleAnswer(true)}
-                className="w-full py-5 px-6 rounded-2xl border-2 border-slate-100 bg-white shadow-sm text-left font-semibold text-slate-700 hover:border-pink-300 hover:bg-pink-50 active:scale-[0.98] transition-all flex items-center justify-between"
+                className={cn(
+                  "w-full py-5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-pink-50 hover:text-pink-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
+                  answers[currentQ.id] === true && "bg-pink-50 text-pink-900"
+                )}
               >
-                ใช่ / มีประวัติ
-                <ArrowRight className="w-5 h-5 text-slate-300" />
+                <span className="relative z-10 flex items-center justify-between w-full">
+                  ใช่ / มีประวัติ
+                  <ArrowRight className={cn("w-5 h-5 text-slate-300 group-hover:text-pink-400", answers[currentQ.id] === true && "text-pink-500")} />
+                </span>
+                {answers[currentQ.id] === true && isAdvancing && (
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 0.15, ease: "linear" }}
+                    className="absolute bottom-0 left-0 h-1.5 bg-pink-400/50"
+                  />
+                )}
               </button>
               <button
                 onClick={() => handleAnswer(false)}
-                className="w-full py-5 px-6 rounded-2xl border-2 border-slate-100 bg-white shadow-sm text-left font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 active:scale-[0.98] transition-all flex items-center justify-between"
+                className={cn(
+                  "w-full py-5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-blue-50 hover:text-blue-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
+                  answers[currentQ.id] === false && "bg-blue-50 text-blue-900"
+                )}
               >
-                ไม่ใช่ / ไม่มี
-                <ArrowRight className="w-5 h-5 text-slate-300" />
+                <span className="relative z-10 flex items-center justify-between w-full">
+                  ไม่ใช่ / ไม่มี
+                  <ArrowRight className={cn("w-5 h-5 text-slate-300 group-hover:text-blue-400", answers[currentQ.id] === false && "text-blue-500")} />
+                </span>
+                {answers[currentQ.id] === false && isAdvancing && (
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 0.15, ease: "linear" }}
+                    className="absolute bottom-0 left-0 h-1.5 bg-blue-400/50"
+                  />
+                )}
               </button>
             </div>
           </motion.div>
