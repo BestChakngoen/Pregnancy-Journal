@@ -15,7 +15,7 @@ export default function BottomNav() {
     { href: "/profile", label: "โปรไฟล์", icon: User },
   ];
 
-  const hiddenPaths = ["/onboarding", "/assessment", "/pre-test", "/post-test", "/satisfaction", "/admin", "/education/ebook"];
+  const hiddenPaths = ["/login", "/onboarding", "/assessment", "/pre-test", "/post-test", "/satisfaction", "/admin", "/education/ebook"];
   const isHidden = hiddenPaths.some(p => pathname?.startsWith(p));
   if (isHidden) return null;
 

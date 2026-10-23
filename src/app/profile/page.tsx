@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Settings, LogOut, Heart, BellRing, CircleUserRound, ChevronRight } from "lucide-react";
+import { User, Settings, LogOut, Heart, BellRing, KeyRound, CircleUserRound, ChevronRight } from "lucide-react";
 import { useUserStore } from "@/lib/userStore";
 import { useRouter } from "next/navigation";
 import EditProfileModal from "@/components/modals/EditProfileModal";
 import HealthHistoryModal from "@/components/modals/HealthHistoryModal";
+import ChangePasswordModal from "@/components/modals/ChangePasswordModal";
 import { useAlertStore } from "@/lib/alertStore";
 
 export default function ProfilePage() {
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHealthHistoryOpen, setIsHealthHistoryOpen] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
 
   const handleLogout = () => {
     useAlertStore.getState().showAlert({
@@ -24,7 +26,7 @@ export default function ProfilePage() {
       showCancelButton: true,
       onConfirm: () => {
         logout();
-        router.push("/onboarding");
+        router.push("/login");
       }
     });
   };
@@ -40,6 +42,11 @@ export default function ProfilePage() {
       <HealthHistoryModal 
         isOpen={isHealthHistoryOpen}
         onClose={() => setIsHealthHistoryOpen(false)}
+      />
+
+      <ChangePasswordModal
+        isOpen={isPasswordOpen}
+        onClose={() => setIsPasswordOpen(false)}
       />
 
       {/* Header */}
@@ -92,6 +99,19 @@ export default function ProfilePage() {
                 <Heart className="w-5 h-5" />
               </div>
               <span className="font-semibold text-slate-700/90 text-sm">ประวัติสุขภาพ</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400/80 group-hover:text-slate-600 transition-colors group-hover:translate-x-1" />
+          </button>
+
+          <button
+            onClick={() => setIsPasswordOpen(true)}
+            className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl shadow-sm hover:bg-white/70 transition-all active:scale-[0.98] group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-emerald-100/80 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-slate-700/90 text-sm">เปลี่ยนรหัสผ่าน</span>
             </div>
             <ChevronRight className="w-5 h-5 text-slate-400/80 group-hover:text-slate-600 transition-colors group-hover:translate-x-1" />
           </button>

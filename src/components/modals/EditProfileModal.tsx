@@ -139,7 +139,8 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
                   required
                   className={inputClasses}
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  readOnly
+                  title="ชื่อผูกกับบัญชี ไม่สามารถเปลี่ยนได้"
                 />
               </div>
 

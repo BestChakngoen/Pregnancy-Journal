@@ -1,34 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { ChevronRight, User, CalendarDays, Activity, Loader2, Lock } from "lucide-react";
+import { ChevronRight, CalendarDays, Activity, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function Onboarding() {
   const router = useRouter();
   const { loginOrSaveUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [authName, setAuthName] = useState("");
   const [formData, setFormData] = useState({
-    name: "",
     age: "",
     gestationalWeeks: "",
     gravida: "1",
   });
 
+  // ต้องล็อกอินที่หน้า /login ก่อน ชื่อมาจากบัญชีที่ล็อกอิน
+  useEffect(() => {
+    return onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser?.displayName) setAuthName(fbUser.displayName);
+      else router.replace("/login");
+    });
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!authName) return;
     
     setIsLoading(true);
     
     try {
-      const userRef = doc(db, "users", formData.name.trim().toLowerCase());
+      const userRef = doc(db, "users", authName.toLowerCase());
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
@@ -44,7 +53,7 @@ export default function Onboarding() {
       } else {
         // ถ้ายังไม่มี ให้สร้างใหม่
         const newProfile = {
-          name: formData.name.trim(),
+          name: authName,
           age: formData.age,
           gestationalWeeks: formData.gestationalWeeks,
           gravida: formData.gravida,
@@ -66,7 +75,7 @@ export default function Onboarding() {
       console.error("Error saving user:", error);
       // Fallback: Save locally if Firebase fails
       const localProfile = {
-        name: formData.name.trim(),
+        name: authName,
         age: formData.age,
         gestationalWeeks: formData.gestationalWeeks,
         gravida: formData.gravida,
@@ -123,19 +132,6 @@ export default function Onboarding() {
         onSubmit={handleSubmit} 
         className="flex-1 flex flex-col gap-6 w-full md:w-1/2"
       >
-        <div>
-          <label className={labelClasses}>
-            <User className="w-4 h-4 text-pink-500" />
-            ชื่อของคุณแม่ (หรือชื่อเล่น)
-          </label>
-          <input
-            type="text" required autoComplete="name"
-            placeholder="เช่น แม่ส้ม, Sarah"
-            className={inputClasses}
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          />
-        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>

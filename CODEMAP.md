@@ -9,7 +9,7 @@
 - **ชื่อแอป:** MomSafe (key ใน localStorage ยังขึ้นต้น `bumply_` โดยตั้งใจ เพื่อไม่ให้ผู้ใช้เดิมหลุดจากระบบ)
 - **Stack:** Next.js 16 (App Router) · React 19 · Tailwind v4 · Framer Motion · Zustand · Firebase Firestore · Recharts · react-hot-toast · lucide-react
 - **ภาษา UI:** ไทยทั้งหมด (ฟอนต์ Prompt) · mobile-first, desktop มี sidebar
-- **ไม่มี Firebase Auth จริง** — "login" = พิมพ์ชื่อ → ใช้ชื่อ (lowercase) เป็น document id ใน Firestore `users/{name}`
+- **Login:** Firebase Auth (Email/Password) โดยแปลงชื่อเป็นอีเมลภายใน `{hex ของชื่อ}@momsafe.app` (`login/page.tsx`); ชื่อที่แสดงเก็บใน `displayName`. ข้อมูลใน Firestore ยังใช้ชื่อ (lowercase) เป็น document id `users/{name}` ไม่ใช่ uid
 - **ข้อมูลอยู่ 2 ที่:** localStorage (โปรไฟล์ + น้ำหนัก/ลูกดิ้น/ความดันหน้า tracking) กับ Firestore (โปรไฟล์, ความดันจาก Dashboard, ผลความพึงพอใจ)
 
 ## 2. ถ้าจะแก้... ให้ไปที่...
@@ -23,10 +23,12 @@
 | หน้าแรก (สวัสดี, วงแหวนสัปดาห์, เมนูลัด, ทิปส์ประจำวัน) | `src/app/page.tsx` |
 | คำนวณสัปดาห์จากวันกำหนดคลอด (EDD) | `src/app/page.tsx` → `handleEddChange` |
 | วงแหวนอายุครรภ์ (40 สัปดาห์, input วันคลอด) | `src/components/ui/AnimatedRing.tsx` |
-| ฟอร์มสมัคร/เข้าสู่ระบบด้วยชื่อ (onboarding) | `src/app/onboarding/page.tsx` |
+| หน้าสมัคร/เข้าสู่ระบบด้วยชื่อ + รหัสผ่าน (Firebase Auth) | `src/app/login/page.tsx` (`nameToEmail`, `errorMessage`) |
+| ฟอร์มข้อมูลส่วนตัวหลังล็อกอิน (อายุ, อายุครรภ์, Gravida) | `src/app/onboarding/page.tsx` |
 | ออกจากระบบ | `src/app/profile/page.tsx` → `handleLogout`, `userStore.logout` |
 | โปรไฟล์ + เมนูโปรไฟล์ | `src/app/profile/page.tsx` |
 | แก้ข้อมูลส่วนตัว (modal) | `src/components/modals/EditProfileModal.tsx` |
+| เปลี่ยนรหัสผ่าน (modal) | `src/components/modals/ChangePasswordModal.tsx` (เปิดจากเมนูใน `profile/page.tsx`) |
 | ประวัติสุขภาพ + กราฟ (tab ความดัน/น้ำหนัก/ลูกดิ้น) | `src/components/modals/HealthHistoryModal.tsx` |
 | บันทึกความดัน **จากหน้าแรก** (ลง Firestore, เตือนถ้า ≥140/90) | `src/components/loggers/BloodPressureLogger.tsx` |
 | บันทึกความดัน/น้ำหนัก **จากหน้า tracking** (ลง localStorage) | `src/components/modals/TrackingModals.tsx` + `src/lib/trackingStore.ts` |
@@ -54,9 +56,10 @@
 
 | URL | ไฟล์ | หมายเหตุ |
 |---|---|---|
-| `/` | `page.tsx` | ถ้ายังไม่มี user → redirect `/onboarding` |
-| `/onboarding` | `onboarding/page.tsx` | เช็ค/สร้าง doc `users/{name}`; ถ้า Firestore พัง fallback เก็บ local |
-| `/tracking` | `tracking/page.tsx` | ไม่ได้เช็คว่า login แล้วหรือยัง |
+| `/` | `page.tsx` | ถ้ายังไม่มี user → redirect `/login` |
+| `/login` | `login/page.tsx` | สมัคร/เข้าสู่ระบบ; มีข้อมูลส่วนตัวใน Firestore แล้ว → `/` ไม่มี → `/onboarding` |
+| `/onboarding` | `onboarding/page.tsx` | ต้องล็อกอินก่อน (ไม่งั้นเด้งไป `/login`); เช็ค/สร้าง doc `users/{name}`; ถ้า Firestore พัง fallback เก็บ local |
+| `/tracking` | `tracking/page.tsx` | |
 | `/assessment` | `assessment/page.tsx` | ผลคำนวณแล้ว **ไม่ได้บันทึก** ที่ไหน |
 | `/education` | `education/page.tsx` | hub |
 | `/education/ebook` | `education/ebook/page.tsx` | |
@@ -66,7 +69,7 @@
 | `/profile` | `profile/page.tsx` | เปิด 2 modal |
 | `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง |
 
-หน้าที่ซ่อม BottomNav: `/onboarding /assessment /pre-test /post-test /satisfaction /admin /education/ebook` (แก้ใน `hiddenPaths`; `/videos` **ไม่ได้อยู่ในรายการ** จึงมีเมนูล่างแสดงอยู่)
+หน้าที่ซ่อม BottomNav: `/login /onboarding /assessment /pre-test /post-test /satisfaction /admin /education/ebook` (แก้ใน `hiddenPaths`; `/videos` **ไม่ได้อยู่ในรายการ** จึงมีเมนูล่างแสดงอยู่)
 
 ## 4. ข้อมูล: เก็บที่ไหน อะไรอ่าน/เขียน
 
@@ -89,6 +92,7 @@ src/components/
   layout/BottomNav.tsx           เมนูล่าง (mobile) / sidebar (md+)
   loggers/BloodPressureLogger    bottom-sheet บันทึกความดัน → Firestore
   modals/EditProfileModal        แก้โปรไฟล์ → Firestore + local
+  modals/ChangePasswordModal     เปลี่ยนรหัสผ่าน (reauthenticate + updatePassword)
   modals/HealthHistoryModal      กราฟประวัติ (recharts) 3 tab
   modals/TrackingModals          export: Modal (base), BloodPressureModal, WeightModal
   quiz/Quiz                      ข้อสอบ ใช่/ไม่ใช่ 10 ข้อ ใช้ร่วม pre/post
