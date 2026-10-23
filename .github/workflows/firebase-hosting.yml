@@ -15,6 +15,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Check service account secret
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          node -e '
+            let j;
+            try { j = JSON.parse(process.env.SA); } catch { console.log("::error::FIREBASE_SERVICE_ACCOUNT is empty or not valid JSON (truncated paste?)"); process.exit(1); }
+            const missing = ["type", "project_id", "private_key", "client_email"].filter((k) => !j[k]);
+            if (missing.length) { console.log("::error::FIREBASE_SERVICE_ACCOUNT is missing fields: " + missing.join(", ")); process.exit(1); }
+            if (j.project_id !== "pregnancy-journal-162ba") { console.log("::error::FIREBASE_SERVICE_ACCOUNT belongs to project " + j.project_id); process.exit(1); }
+          '
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
