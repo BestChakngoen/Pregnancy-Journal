@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, Variants } from "framer-motion";
-import { Activity, HeartPulse, Scale, Footprints, ChevronRight, Plus, Droplet } from "lucide-react";
+import { Activity, HeartPulse, Scale, Footprints, ChevronRight, Plus} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTrackingStore } from "@/lib/trackingStore";
 import { BloodPressureModal, WeightModal } from "@/components/modals/TrackingModals";
@@ -25,7 +25,7 @@ const itemVariants: Variants = {
 
 export default function TrackingPage() {
   const router = useRouter();
-  const { data, updateBloodPressure, updateWeight, addKick, addWater } = useTrackingStore();
+  const { data, updateBloodPressure, updateWeight, addKick, } = useTrackingStore();
   
   const [isBPModalOpen, setIsBPModalOpen] = useState(false);
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
@@ -59,7 +59,7 @@ export default function TrackingPage() {
       >
         
         {/* Core Tracker: Blood Pressure (Span 2 cols) */}
-        <motion.section variants={itemVariants} className="col-span-2">
+        <motion.section variants={itemVariants} className="col-span-2 md:col-span-2 md:row-span-2 h-full">
           <div className="flex items-center justify-between mb-2 ml-1">
             <h3 className="font-semibold text-slate-800/90 text-sm">ความดันโลหิต</h3>
             <button 
@@ -111,7 +111,7 @@ export default function TrackingPage() {
         <motion.button 
           variants={itemVariants} 
           onClick={() => setIsWeightModalOpen(true)}
-          className="col-span-1 row-span-2 flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden"
+          className="col-span-1 row-span-2 md:col-span-1 flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden"
         >
           {/* Mini trend line */}
           <svg className="absolute bottom-6 right-0 w-24 h-16 opacity-30 pointer-events-none group-hover:opacity-60 transition-opacity text-amber-600" viewBox="0 0 50 30" preserveAspectRatio="none">
@@ -139,7 +139,7 @@ export default function TrackingPage() {
         <motion.button 
           variants={itemVariants} 
           onClick={addKick}
-          className="col-span-1 flex flex-col p-4 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden"
+          className="col-span-1 flex flex-col p-4 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
         >
           <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-pink-200/50 rounded-full blur-xl group-hover:scale-150 transition-transform -z-10" />
           <div className="flex items-center justify-between mb-2">
@@ -157,30 +157,8 @@ export default function TrackingPage() {
           </div>
         </motion.button>
 
-        {/* Secondary Tracker: Water (Square) */}
-        <motion.button 
-          variants={itemVariants} 
-          onClick={addWater}
-          className="col-span-1 flex flex-col p-4 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden"
-        >
-          <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-cyan-200/50 rounded-full blur-xl group-hover:scale-150 transition-transform -z-10" />
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-2 bg-cyan-100/80 rounded-xl group-hover:-translate-y-1 transition-transform">
-              <Droplet className="w-4 h-4 text-cyan-600" />
-            </div>
-            <div className="px-2 py-0.5 bg-cyan-50 text-cyan-600 text-xs font-bold rounded-full">
-              แตะเพื่อดื่ม
-            </div>
-          </div>
-          <h4 className="font-semibold text-slate-700/90 text-sm">ดื่มน้ำ</h4>
-          <div className="flex items-baseline gap-1 mt-auto pt-2">
-            <span className="text-2xl font-extrabold text-cyan-600 tabular-nums">{data.waterGlasses}</span>
-            <span className="text-xs text-cyan-500/70 font-bold">/8 แก้ว</span>
-          </div>
-        </motion.button>
-
         {/* Action Banner (Span 2 cols) - Premium Glass Design */}
-        <motion.section variants={itemVariants} className="col-span-2 mt-2">
+        <motion.section variants={itemVariants} className="col-span-2 md:col-span-4 mt-2 md:mt-6">
           <button 
             onClick={() => router.push('/assessment')}
             className="w-full flex items-center justify-between p-5 bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.15)] active:scale-95 transition-all group overflow-hidden relative"

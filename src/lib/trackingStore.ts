@@ -8,7 +8,6 @@ export interface TrackingData {
   weight: number;
   weightLastUpdated: string;
   kicks: number;
-  waterGlasses: number;
 }
 
 const defaultData: TrackingData = {
@@ -17,7 +16,6 @@ const defaultData: TrackingData = {
   weight: 0,
   weightLastUpdated: "-",
   kicks: 0,
-  waterGlasses: 0,
 };
 
 export function useTrackingStore() {
@@ -56,13 +54,8 @@ export function useTrackingStore() {
   const addKick = () => {
     saveToLocal({ ...data, kicks: data.kicks + 1 });
   };
-  
-  const addWater = () => {
-    saveToLocal({ ...data, waterGlasses: Math.min(data.waterGlasses + 1, 20) }); // cap at 20
-  };
-
   const resetDaily = () => {
-    saveToLocal({ ...data, kicks: 0, waterGlasses: 0 });
+    saveToLocal({ ...data, kicks: 0 });
   };
 
   return { 
@@ -70,8 +63,7 @@ export function useTrackingStore() {
     isLoaded, 
     updateBloodPressure, 
     updateWeight, 
-    addKick, 
-    addWater,
+    addKick,
     resetDaily
   };
 }

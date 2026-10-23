@@ -1,14 +1,15 @@
-﻿// src/lib/userStore.ts
+// src/lib/userStore.ts
 // à¹€à¸£à¸²à¹ƒà¸Šà¹‰ localStorage à¹€à¸žà¸·à¹ˆà¸­à¸ˆà¸³à¸„à¹ˆà¸²à¸§à¹ˆà¸²à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸„à¸™à¸™à¸µà¹‰à¸Šà¸·à¹ˆà¸­à¸­à¸°à¹„à¸£ à¹à¸¥à¸°à¹€à¸„à¸¢à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²à¹€à¸šà¸·à¹‰à¸­à¸‡à¸•à¹‰à¸™à¹à¸¥à¹‰à¸§à¸«à¸£à¸·à¸­à¸¢à¸±à¸‡
 "use client";
 
 import { useEffect, useState } from "react";
 
 export interface UserProfile {
- name: string;
- age: string;
- gestationalWeeks: string;
- gravida: string;
+  name: string;
+  age: string;
+  gestationalWeeks: string;
+  gravida: string;
+  expectedDeliveryDate?: string;
 }
 
 export function useUserStore() {

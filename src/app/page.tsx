@@ -3,33 +3,43 @@
 import { useState, useEffect } from "react";
 import AnimatedRing from "@/components/ui/AnimatedRing";
 import AnimatedCard from "@/components/ui/AnimatedCard";
-import SymptomLogger from "@/components/loggers/SymptomLogger";
-import RedFlagAlert from "@/components/ui/RedFlagAlert";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { PenSquare, Calendar, AlertTriangle, Lightbulb, ChevronRight, User, Bell, Home, Activity, BookOpen, Loader2 } from "lucide-react";
+import { AlertTriangle, Lightbulb, ChevronRight, User, Bell, Activity, Loader2 } from "lucide-react";
 import BloodPressureLogger from "@/components/loggers/BloodPressureLogger";
 import { useUserStore } from "@/lib/userStore";
 
 export default function Dashboard() {
   const router = useRouter();
-  const [isLoggerOpen, setIsLoggerOpen] = useState(false);
   const [isBPLoggerOpen, setIsBPLoggerOpen] = useState(false);
-  const [redFlagSymptom, setRedFlagSymptom] = useState<string | null>(null);
-  const { user, isLoaded } = useUserStore();
+  const { user, isLoaded, loginOrSaveUser } = useUserStore();
+
+  const handleEddChange = (newEdd: string) => {
+    if (!user) return;
+    let newWeeks = user.gestationalWeeks;
+    if (newEdd) {
+      const eddDate = new Date(newEdd);
+      const today = new Date();
+      eddDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      const diffTime = eddDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const daysElapsed = 280 - diffDays;
+      let calculatedWeeks = Math.floor(daysElapsed / 7);
+      calculatedWeeks = Math.max(1, Math.min(42, calculatedWeeks));
+      newWeeks = calculatedWeeks.toString();
+    }
+    loginOrSaveUser({
+      ...user,
+      expectedDeliveryDate: newEdd,
+      gestationalWeeks: newWeeks
+    });
+  };
 
   useEffect(() => {
     if (isLoaded && !user) {
       router.replace("/onboarding");
     }
   }, [isLoaded, user, router]);
-
-  const handleRedFlagTrigger = (symptomName: string) => {
-    setIsLoggerOpen(false); // Close logger
-    setTimeout(() => {
-      setRedFlagSymptom(symptomName); // Open alert after a tiny delay for smooth animation
-    }, 300);
-  };
 
   if (!isLoaded || !user) {
     return (
@@ -41,27 +51,15 @@ export default function Dashboard() {
 
   return (
     <div className="pb-24">
-      <SymptomLogger 
-        isOpen={isLoggerOpen} 
-        onClose={() => setIsLoggerOpen(false)} 
-        onRedFlagTrigger={handleRedFlagTrigger}
-      />
-
       <BloodPressureLogger 
         isOpen={isBPLoggerOpen}
         onClose={() => setIsBPLoggerOpen(false)}
       />
       
-      <RedFlagAlert 
-        isOpen={!!redFlagSymptom} 
-        symptomName={redFlagSymptom || ""} 
-        onClose={() => setRedFlagSymptom(null)} 
-      />
-
       {/* Header */}
       <header className="flex flex-col gap-4 p-6 pb-2">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-blue-500 tracking-tight">Bumply</h1>
+          <h1 className="text-2xl font-bold text-blue-500 tracking-tight">MomSafe</h1>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => router.push("/profile")}
@@ -87,51 +85,15 @@ export default function Dashboard() {
       </header>
 
       {/* Main Progress Area */}
-      <main className="px-6 flex flex-col gap-8 mt-4">
-        <section className="flex flex-col items-center">
-          <AnimatedRing week={Number(user.gestationalWeeks)} daysToGo={280 - (Number(user.gestationalWeeks) * 7)} />
-        </section>
-
-        {/* Baby Size - High Quality Asset */}
-        <section className="flex flex-col">
-          <div className="relative w-full h-[220px] rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] group cursor-pointer">
-            <Image 
-              src="/images/lemon.jpg" 
-              alt={`Baby size at week ${user.gestationalWeeks}`} 
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
-            />
-            {/* Elegant dark gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent pointer-events-none" />
-            
-            <div className="absolute bottom-0 left-0 p-6 w-full flex flex-col pointer-events-none">
-              <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white/90 text-xs font-bold tracking-wider mb-2 w-fit border border-white/20">
-                ขนาดสัปดาห์ที่ {user.gestationalWeeks}
-              </span>
-              <h3 className="text-white font-extrabold text-2xl drop-shadow-md tracking-tight mb-1">เท่าลูกเลมอน</h3>
-              <div className="flex gap-3 text-sm text-white/80 font-medium">
-                <span>ยาว ~30 ซม.</span>
-                <span>•</span>
-                <span>หนัก ~600 ก.</span>
-              </div>
-            </div>
-          </div>
+      <main className="px-6 flex flex-col md:grid md:grid-cols-12 md:gap-8 gap-8 mt-4 md:mt-8 md:px-10">
+        <section className="flex flex-col items-center md:col-span-12 md:py-12 md:bg-white/40 md:rounded-[2.5rem] md:p-8 md:shadow-sm md:justify-center">
+          <AnimatedRing week={Number(user.gestationalWeeks)} edd={user.expectedDeliveryDate} onEddChange={handleEddChange} />
         </section>
 
         {/* Quick Actions with Framer Motion */}
-        <section>
+        <section className="md:col-span-8 md:row-start-2">
           <h3 className="font-semibold text-slate-800/90 mb-4 ml-1">เมนูลัด</h3>
           <div className="grid grid-cols-2 gap-3">
-            <AnimatedCard
-              title="บันทึกอาการ"
-              subtitle="วันนี้: ปกติ"
-              icon={PenSquare}
-              colorClass="bg-pink-100"
-              iconColorClass="text-pink-600"
-              delay={0.1}
-              onClick={() => setIsLoggerOpen(true)}
-            />
             <AnimatedCard
               title="ความดัน"
               subtitle="บันทึกค่า"
@@ -140,15 +102,6 @@ export default function Dashboard() {
               iconColorClass="text-indigo-600"
               delay={0.15}
               onClick={() => setIsBPLoggerOpen(true)}
-            />
-            <AnimatedCard
-              title="ตารางนัด"
-              subtitle="18 ต.ค."
-              icon={Calendar}
-              colorClass="bg-blue-100"
-              iconColorClass="text-blue-600"
-              delay={0.2}
-              onClick={() => router.push("/tracking")}
             />
             <AnimatedCard
               title="ฉุกเฉิน"
@@ -163,6 +116,7 @@ export default function Dashboard() {
         </section>
 
         {/* Daily Tip */}
+        <div className="md:col-span-4 md:row-start-2 flex flex-col gap-6 md:justify-end">
         <section className="flex items-center justify-between p-5 bg-gradient-to-r from-yellow-50 to-orange-50/30 border border-white/60 backdrop-blur-md rounded-[1.5rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:brightness-95 transition-all cursor-pointer active:scale-[0.98]">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-yellow-100/80 rounded-xl">
@@ -175,6 +129,7 @@ export default function Dashboard() {
           </div>
           <ChevronRight className="w-5 h-5 text-slate-400/80" />
         </section>
+        </div>
       </main>
 
     </div>

@@ -8,7 +8,6 @@ import FloatingParticles from "@/components/ui/FloatingParticles";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
 import { doc, collection, addDoc } from "firebase/firestore";
-import toast from "react-hot-toast";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface BloodPressureLoggerProps {

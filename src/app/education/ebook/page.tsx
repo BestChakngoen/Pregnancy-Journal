@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -25,6 +26,10 @@ export default function EbookPage() {
     return () => {
       // คืนค่าหน้าจอกลับเป็นปกติเมื่อออกจากหน้านี้
       try {
+        if (screen.orientation && 'lock' in screen.orientation) {
+          // @ts-ignore
+          screen.orientation.lock('portrait').catch(() => {});
+        }
         if (screen.orientation && 'unlock' in screen.orientation) {
           screen.orientation.unlock();
         }
@@ -37,15 +42,28 @@ export default function EbookPage() {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
+      if (screen.orientation && 'lock' in screen.orientation) {
+        // @ts-ignore
+        await screen.orientation.lock('portrait').catch(() => {});
+      }
       if (screen.orientation && 'unlock' in screen.orientation) {
         screen.orientation.unlock();
       }
     } catch (e) {}
-    router.push("/education");
+    
+    // หน่วงเวลาเล็กน้อยเพื่อให้ Animation หมุนจอทำงานเสร็จก่อนเปลี่ยนหน้า
+    setTimeout(() => {
+      router.push("/education");
+    }, 300);
   };
 
   return (
-    <div className="flex flex-col min-h-dvh bg-slate-900">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="flex flex-col min-h-dvh bg-slate-900"
+    >
       {/* Header */}
       <header className="flex items-center p-4 bg-white/90 backdrop-blur-md shadow-sm shrink-0 relative z-10">
         <button 
@@ -66,6 +84,6 @@ export default function EbookPage() {
           allowFullScreen
         ></iframe>
       </main>
-    </div>
+    </motion.div>
   );
 }

@@ -28,9 +28,10 @@ export default function AnimatedCard({
       onClick={onClick}
       className={cn(
         "relative flex flex-col items-center p-4 backdrop-blur-md rounded-[1.75rem]",
-        colorClass, // <-- Apply the color class to the whole card!
+        colorClass,
         "shadow-[0_8px_24px_-8px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.08)]",
-        "transition-all text-center w-full group overflow-hidden border border-white/40"
+        "transition-all text-center w-full group overflow-hidden border border-white/40",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}

@@ -4,6 +4,8 @@ import "./globals.css";
 import BottomNav from "@/components/layout/BottomNav";
 import { Toaster } from "react-hot-toast";
 import PopupAlert from "@/components/ui/PopupAlert";
+import PortraitLockOverlay from "@/components/ui/PortraitLockOverlay";
+import ExternalBrowserRedirect from "@/components/ui/ExternalBrowserRedirect";
 
 const promptFont = Prompt({
   variable: "--font-prompt",
@@ -12,7 +14,7 @@ const promptFont = Prompt({
 });
 
 export const metadata: Metadata = {
-  title: "Bumply - Pregnancy Tracker",
+  title: "MomSafe - Pregnancy Tracker",
   description: "Web app for tracking pregnancy age and patient safety",
 };
 
@@ -23,7 +25,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={`${promptFont.variable} font-sans antialiased`}>
-      <body className="min-h-dvh flex flex-col items-center">
+      <body className="min-h-dvh flex flex-col md:flex-row bg-slate-50 overflow-x-hidden">
+        <ExternalBrowserRedirect />
+        <PortraitLockOverlay />
         <PopupAlert />
         <Toaster 
           position="top-center" 
@@ -41,15 +45,18 @@ export default function RootLayout({
             },
           }}
         />
-        {/* We use a max-w container to simulate mobile view on desktop */}
-        <div className="w-full max-w-md bg-white/30 backdrop-blur-3xl min-h-dvh shadow-sm overflow-x-hidden relative">
+        <BottomNav />
+        
+        {/* Main Content Area - scales to max-w-7xl on desktop */}
+        <div className="flex-1 w-full max-w-md md:max-w-7xl mx-auto bg-white/30 backdrop-blur-3xl min-h-dvh shadow-sm relative transition-all duration-300 md:ml-64 flex flex-col">
           
-          {/* High-Performance Animated Mesh Background (No CSS Filters) */}
-          <div className="fixed inset-0 w-full max-w-md mx-auto pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent opacity-80" />
-          <div className="fixed inset-0 w-full max-w-md mx-auto pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-transparent opacity-80 animate-blob" />
+          {/* Full-width mesh background */}
+          <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent opacity-80" />
+          <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-transparent opacity-80 animate-blob" />
           
-          {children}
-          <BottomNav />
+          <div className="flex-1 w-full flex flex-col pb-20 md:pb-0">
+            {children}
+          </div>
         </div>
       </body>
     </html>

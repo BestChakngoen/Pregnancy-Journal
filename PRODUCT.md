@@ -1,6 +1,6 @@
 # Product Truths
 
-**Name:** Bumply
+**Name:** MomSafe
 **Type:** Web Application (Mobile-first)
 **Purpose:** Pregnancy tracking and maternal safety monitoring.
 
@@ -29,4 +29,4 @@
 6. **Admin Dashboard:**
    - สำหรับเจ้าหน้าที่ดูข้อมูลหลังบ้านและ Export เป็น PDF
 7. **Infrastructure:**
-   - Deploy ขึ้น Netlify
+   - Deploy ขึ้น Firebase Hosting (static export, โฟลเดอร์ `out`)

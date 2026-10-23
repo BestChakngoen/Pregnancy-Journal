@@ -210,7 +210,7 @@ export default function Assessment() {
                 )}
               >
                 <span className="relative z-10 flex items-center justify-between w-full">
-                  ใช่ / มีประวัติ
+                  ใช่
                   <ArrowRight className={cn("w-5 h-5 text-slate-300 group-hover:text-pink-400", answers[currentQ.id] === true && "text-pink-500")} />
                 </span>
                 {answers[currentQ.id] === true && isAdvancing && (
@@ -230,7 +230,7 @@ export default function Assessment() {
                 )}
               >
                 <span className="relative z-10 flex items-center justify-between w-full">
-                  ไม่ใช่ / ไม่มี
+                  ไม่ใช่
                   <ArrowRight className={cn("w-5 h-5 text-slate-300 group-hover:text-blue-400", answers[currentQ.id] === false && "text-blue-500")} />
                 </span>
                 {answers[currentQ.id] === false && isAdvancing && (

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2, ChevronLeft, Download, ShieldCheck, UserCheck, Activity } from "lucide-react";
-import toast from "react-hot-toast";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface UserDoc {
@@ -52,11 +51,7 @@ export default function AdminPage() {
       setUsers(fetchedUsers);
     } catch (err) {
       console.error("Error fetching users:", err);
-      // Mock data for UI preview if Firebase is empty/fails
-      setUsers([
-        { id: "1", name: "แม่ส้ม", age: "28", gestationalWeeks: "24", gravida: "1", createdAt: new Date().toISOString() },
-        { id: "2", name: "Sarah", age: "32", gestationalWeeks: "30", gravida: "2", createdAt: new Date().toISOString() }
-      ]);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }

@@ -4,13 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { ChevronRight, Baby, User, CalendarDays, Activity, Loader2 } from "lucide-react";
+import { ChevronRight, User, CalendarDays, Activity, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import toast from "react-hot-toast";
-import { useAlertStore } from "@/lib/alertStore";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -42,11 +40,7 @@ export default function Onboarding() {
           gestationalWeeks: userData.gestationalWeeks || formData.gestationalWeeks,
           gravida: userData.gravida || formData.gravida,
         });
-        useAlertStore.getState().showAlert({
-          type: "success",
-          title: "ยินดีต้อนรับกลับมาค่ะ",
-          message: `คุณแม่ ${userData.name}`,
-        });
+        
       } else {
         // ถ้ายังไม่มี ให้สร้างใหม่
         const newProfile = {
@@ -64,11 +58,7 @@ export default function Onboarding() {
           gestationalWeeks: newProfile.gestationalWeeks,
           gravida: newProfile.gravida,
         });
-        useAlertStore.getState().showAlert({
-          type: "success",
-          title: "สร้างโปรไฟล์สำเร็จ!",
-          message: `ยินดีต้อนรับคุณแม่ ${newProfile.name} สู่ระบบของเราค่ะ`,
-        });
+        
       }
       
       router.push("/");
@@ -82,11 +72,7 @@ export default function Onboarding() {
         gravida: formData.gravida,
       };
       loginOrSaveUser(localProfile);
-      useAlertStore.getState().showAlert({
-        type: "warning",
-        title: "โหมดใช้งานออฟไลน์",
-        message: "ไม่สามารถเชื่อมต่อฐานข้อมูลได้ ระบบจะบันทึกข้อมูลในเครื่องของคุณแทน",
-      });
+      
       router.push("/");
     } finally {
       setIsLoading(false);
@@ -97,18 +83,19 @@ export default function Onboarding() {
   const labelClasses = "block text-sm font-semibold text-slate-700/90 mb-2 ml-1 flex items-center gap-2";
 
   return (
-    <div className="min-h-dvh flex flex-col pt-12 pb-12 px-6 relative">
+    <div className="min-h-dvh flex flex-col md:flex-row md:items-center pt-12 pb-12 px-6 relative w-full max-w-5xl mx-auto md:gap-16">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-200/40 rounded-full blur-3xl -z-10 -translate-x-1/3 translate-y-1/3" />
 
+      <div className="w-full md:w-1/2 flex flex-col">
       <header className="mb-6">
         <motion.div 
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="w-full h-64 sm:h-72 mb-6 relative shrink-0"
+          className="w-full h-64 sm:h-72 md:h-96 mb-6 relative shrink-0"
         >
-          <Image src="/images/mother-minimalist.jpg" alt="Minimalist pregnant mother illustration" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain mix-blend-multiply drop-shadow-sm" />
+          <Image priority src="/images/mother-minimalist.jpg" alt="Minimalist pregnant mother illustration" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain mix-blend-multiply drop-shadow-sm" />
         </motion.div>
         <motion.h1 
           initial={{ y: 20, opacity: 0 }}
@@ -116,7 +103,7 @@ export default function Onboarding() {
           transition={{ delay: 0.1 }}
           className="text-3xl font-bold text-slate-800 tracking-tight text-balance"
         >
-          ยินดีต้อนรับสู่ Bumply
+          ยินดีต้อนรับสู่ MomSafe
         </motion.h1>
         <motion.p 
           initial={{ y: 20, opacity: 0 }}
@@ -127,13 +114,14 @@ export default function Onboarding() {
           ขอข้อมูลเล็กน้อย เพื่อให้เราช่วยดูแลคุณแม่และลูกน้อยได้อย่างแม่นยำที่สุด
         </motion.p>
       </header>
+      </div>
 
       <motion.form 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
         onSubmit={handleSubmit} 
-        className="flex-1 flex flex-col gap-6"
+        className="flex-1 flex flex-col gap-6 w-full md:w-1/2"
       >
         <div>
           <label className={labelClasses}>
@@ -141,8 +129,7 @@ export default function Onboarding() {
             ชื่อของคุณแม่ (หรือชื่อเล่น)
           </label>
           <input
-            type="text"
-            required
+            type="text" required autoComplete="name"
             placeholder="เช่น แม่ส้ม, Sarah"
             className={inputClasses}
             value={formData.name}
@@ -156,7 +143,7 @@ export default function Onboarding() {
               อายุ (ปี)
             </label>
             <input
-              type="number"
+              type="number" inputMode="numeric" pattern="[0-9]*"
               required
               min="15"
               max="60"
@@ -172,7 +159,7 @@ export default function Onboarding() {
               อายุครรภ์ (สัปดาห์)
             </label>
             <input
-              type="number"
+              type="number" inputMode="numeric" pattern="[0-9]*"
               required
               min="1"
               max="42"
@@ -205,7 +192,7 @@ export default function Onboarding() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 shrink-0"
+            className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
           >
             {isLoading ? (
               <>
@@ -214,11 +201,15 @@ export default function Onboarding() {
               </>
             ) : (
               <>
-                เริ่มใช้งาน Bumply
+                เริ่มใช้งาน MomSafe
                 <ChevronRight className="w-5 h-5" />
               </>
             )}
           </button>
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500/80 font-medium">
+            <Lock className="w-3.5 h-3.5" />
+            <span>ข้อมูลสุขภาพของคุณจะถูกจัดเก็บอย่างปลอดภัย</span>
+          </div>
         </div>
       </motion.form>
     </div>

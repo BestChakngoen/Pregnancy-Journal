@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Activity, AlertTriangle, TrendingUp, Scale, Baby, Droplets, Stethoscope } from "lucide-react";
+import { X, Activity, AlertTriangle, TrendingUp, Scale, Baby } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
@@ -23,14 +23,12 @@ interface BPLog {
   displayDate?: string;
 }
 
-type TabType = "bp" | "weight" | "kicks" | "water" | "symptoms";
+type TabType = "bp" | "weight" | "kicks";
 
 const TABS = [
   { id: "bp", label: "ความดัน", icon: Activity },
   { id: "weight", label: "น้ำหนัก", icon: Scale },
-  { id: "kicks", label: "ลูกดิ้น", icon: Baby },
-  { id: "water", label: "น้ำดื่ม", icon: Droplets },
-  { id: "symptoms", label: "อาการ", icon: Stethoscope }
+  { id: "kicks", label: "ลูกดิ้น", icon: Baby }
 ];
 
 export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryModalProps) {
@@ -67,72 +65,18 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
         } as BPLog);
       });
 
-      if (fetchedLogs.length > 0) {
-        setLogs(fetchedLogs);
-      } else {
-        setLogs(generateMockBPData());
-      }
+      setLogs(fetchedLogs);
     } catch (err) {
-      setLogs(generateMockBPData());
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const generateMockBPData = () => {
-    const mock = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const sys = 110 + Math.floor(Math.random() * 25);
-      const dia = 70 + Math.floor(Math.random() * 15);
-      mock.push({
-        timestamp: d.toISOString(),
-        systolic: sys,
-        diastolic: dia,
-        isHighRisk: sys >= 140 || dia >= 90,
-        displayDate: `${d.getDate()}/${d.getMonth() + 1}`
-      });
-    }
-    return mock;
-  };
-
   const latestBP = logs[logs.length - 1];
   const isBPDanger = latestBP?.isHighRisk;
 
-  // Mock Data for other tabs
-  const mockWeightData = [
-    { date: "1 ต.ค.", weight: 60.2 },
-    { date: "3 ต.ค.", weight: 60.5 },
-    { date: "5 ต.ค.", weight: 60.8 },
-    { date: "7 ต.ค.", weight: 61.2 },
-    { date: "10 ต.ค.", weight: 61.5 },
-  ];
-
-  const mockKicksData = [
-    { date: "6 ต.ค.", count: 12 },
-    { date: "7 ต.ค.", count: 15 },
-    { date: "8 ต.ค.", count: 10 },
-    { date: "9 ต.ค.", count: 14 },
-    { date: "10 ต.ค.", count: 11 },
-  ];
-
-  const mockWaterData = [
-    { date: "6 ต.ค.", glasses: 8 },
-    { date: "7 ต.ค.", glasses: 6 },
-    { date: "8 ต.ค.", glasses: 9 },
-    { date: "9 ต.ค.", glasses: 10 },
-    { date: "10 ต.ค.", glasses: 8 },
-  ];
-
-  const mockSymptoms = [
-    { date: "10 ต.ค. 2566", time: "14:30", items: ["แพ้ท้อง 🤢", "อ่อนเพลีย 🥱"] },
-    { date: "9 ต.ค. 2566", time: "09:15", items: ["ปวดหัว 🤕"] },
-    { date: "7 ต.ค. 2566", time: "20:00", items: ["ปวดหลัง 💥", "แพ้ท้อง 🤢"] },
-  ];
-
-  const renderBP = () => (
+      const renderBP = () => (
     <>
       {latestBP && (
         <div className={cn(
@@ -206,15 +150,13 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
         <div className="relative z-10 flex flex-col">
           <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
             <Scale className="w-4 h-4 text-emerald-500" />
-            น้ำหนักล่าสุด (10 ต.ค.)
+            น้ำหนักล่าสุด
           </span>
           <div className="flex items-end gap-1.5">
-            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">
-              61.5
-            </span>
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">-</span>
             <span className="text-sm font-semibold text-slate-500 mb-1.5">กก.</span>
           </div>
-          <p className="text-xs font-medium text-emerald-600 mt-1">+0.3 กก. จากสัปดาห์ที่แล้ว</p>
+          <p className="text-xs font-medium text-emerald-600 mt-1">ยังไม่มีข้อมูล</p>
         </div>
       </div>
 
@@ -225,7 +167,7 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
         </h3>
         <div className="h-[220px] w-full -ml-4">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={mockWeightData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <LineChart data={[]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} domain={['dataMin - 1', 'dataMax + 1']} />
               <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
@@ -252,12 +194,10 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
             ลูกดิ้นวันนี้
           </span>
           <div className="flex items-end gap-1.5">
-            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">
-              11
-            </span>
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">-</span>
             <span className="text-sm font-semibold text-slate-500 mb-1.5">ครั้ง</span>
           </div>
-          <p className="text-xs font-medium text-purple-600 mt-1">อยู่ในเกณฑ์ปกติ 💖</p>
+          <p className="text-xs font-medium text-purple-600 mt-1">ยังไม่มีข้อมูล</p>
         </div>
       </div>
 
@@ -268,7 +208,7 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
         </h3>
         <div className="h-[220px] w-full -ml-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={mockKicksData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={[]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <ReferenceLine y={10} stroke="#fca5a5" strokeDasharray="4 4" />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} />
@@ -287,88 +227,7 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
     </>
   );
 
-  const renderWater = () => (
-    <>
-      <div className="p-6 rounded-[2rem] flex items-center justify-between shadow-sm relative overflow-hidden shrink-0 bg-gradient-to-br from-cyan-50/80 to-blue-50/80 border border-white/60">
-        <div className="relative z-10 flex flex-col w-full">
-          <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
-            <Droplets className="w-4 h-4 text-cyan-500" />
-            ดื่มน้ำวันนี้
-          </span>
-          <div className="flex items-end gap-1.5">
-            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">
-              8
-            </span>
-            <span className="text-sm font-semibold text-slate-500 mb-1.5">แก้ว</span>
-          </div>
-          <div className="w-full h-2.5 bg-white/60 rounded-full mt-4 overflow-hidden shadow-inner">
-            <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 w-[80%] rounded-full shadow-sm" />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
-        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-cyan-500" />
-          ประวัติการดื่มน้ำ
-        </h3>
-        <div className="h-[220px] w-full -ml-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={mockWaterData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <ReferenceLine y={8} stroke="#93c5fd" strokeDasharray="4 4" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} />
-              <Tooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-              <Bar dataKey="glasses" name="แก้ว" fill="#22d3ee" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      
-      <div className="bg-cyan-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
-        <p className="text-xs text-cyan-800/90 leading-relaxed font-semibold">
-          * ดื่มน้ำอย่างน้อย 8-10 แก้วต่อวัน ป้องกันภาวะขาดน้ำและช่วยสร้างน้ำคร่ำ
-        </p>
-      </div>
-    </>
-  );
-
-  const renderSymptoms = () => (
-    <>
-      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
-        <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
-          <Stethoscope className="w-4 h-4 text-rose-500" />
-          ประวัติอาการล่าสุด
-        </h3>
-        
-        <div className="flex flex-col gap-0">
-          {mockSymptoms.map((record, i) => (
-            <div key={i} className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="w-3 h-3 rounded-full bg-rose-400 ring-4 ring-rose-100" />
-                {i !== mockSymptoms.length - 1 && <div className="w-0.5 h-full bg-slate-200 mt-2 min-h-[40px]" />}
-              </div>
-              <div className="pb-6 w-full mt-[-4px]">
-                <div className="flex justify-between items-baseline mb-3">
-                  <p className="text-sm font-bold text-slate-700">{record.date}</p>
-                  <p className="text-xs font-semibold text-slate-400">{record.time}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {record.items.map((item, j) => (
-                    <span key={j} className="px-3 py-1.5 bg-white border border-white/80 rounded-xl text-sm font-semibold text-slate-600 shadow-sm">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-
-  return (
+      return (
     <AnimatePresence>
       {isOpen && (
         <>
@@ -429,9 +288,7 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
               {activeTab === "bp" && renderBP()}
               {activeTab === "weight" && renderWeight()}
               {activeTab === "kicks" && renderKicks()}
-              {activeTab === "water" && renderWater()}
-              {activeTab === "symptoms" && renderSymptoms()}
-            </div>
+                                        </div>
           </motion.div>
         </>
       )}
