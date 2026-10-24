@@ -54,6 +54,9 @@ export function useTrackingStore() {
   const addKick = () => {
     saveToLocal({ ...data, kicks: data.kicks + 1 });
   };
+  const removeKick = () => {
+    saveToLocal({ ...data, kicks: Math.max(0, data.kicks - 1) });
+  };
   const resetDaily = () => {
     saveToLocal({ ...data, kicks: 0 });
   };
@@ -64,6 +67,7 @@ export function useTrackingStore() {
     updateBloodPressure, 
     updateWeight, 
     addKick,
+    removeKick,
     resetDaily
   };
 }

@@ -1,19 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Activity, AlertTriangle, TrendingUp, Scale, Baby } from "lucide-react";
+import { Activity, AlertTriangle, TrendingUp, Scale, Baby } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
-
-interface HealthHistoryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
 
 interface BPLog {
   timestamp: string;
@@ -31,7 +25,7 @@ const TABS = [
   { id: "kicks", label: "ลูกดิ้น", icon: Baby }
 ];
 
-export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryModalProps) {
+export default function TrackingSection() {
   const { user } = useUserStore();
   const [activeTab, setActiveTab] = useState<TabType>("bp");
   
@@ -40,10 +34,11 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen && user?.name && activeTab === "bp") {
-      fetchLogs();
-    }
-  }, [isOpen, user, activeTab]);
+    if (!user?.name || activeTab !== "bp") return;
+    fetchLogs();
+    window.addEventListener("bp-logged", fetchLogs);
+    return () => window.removeEventListener("bp-logged", fetchLogs);
+  }, [user, activeTab]);
 
   const fetchLogs = async () => {
     setIsLoading(true);
@@ -227,71 +222,38 @@ export default function HealthHistoryModal({ isOpen, onClose }: HealthHistoryMod
     </>
   );
 
-      return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
-            onClick={onClose}
-          />
+  return (
+    <div className="pt-8 pb-8 px-6 md:px-10 flex flex-col gap-4 max-w-3xl mx-auto w-full">
+      <header>
+        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">ประวัติสุขภาพ</h1>
+        <p className="text-slate-500 mt-1">ติดตามข้อมูลสุขภาพของคุณแม่</p>
+      </header>
 
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/90 backdrop-blur-2xl rounded-t-[2rem] shadow-[0_-8px_32px_rgba(0,0,0,0.08)] z-50 flex flex-col h-[85vh] border-t border-white/60 overflow-hidden"
-          >
-            {/* Handle Bar */}
-            <div className="w-full flex justify-center pt-4 pb-2 shrink-0 cursor-pointer" onClick={onClose}>
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
-            </div>
+      <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex items-center gap-2 w-max">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all whitespace-nowrap",
+                activeTab === tab.id
+                  ? "bg-slate-800 text-white shadow-md shadow-slate-800/20"
+                  : "bg-white/60 border border-white/60 text-slate-500 hover:bg-white/90 shadow-sm"
+              )}
+            >
+              <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-pink-400" : "text-slate-400")} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-            {/* Header */}
-            <div className="px-6 pb-4 flex justify-between items-center shrink-0">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-800">ประวัติสุขภาพ</h2>
-                <p className="text-sm font-medium text-slate-500 mt-1">ติดตามข้อมูลสุขภาพของคุณแม่</p>
-              </div>
-              <button onClick={onClose} className="w-11 h-11 flex items-center justify-center bg-slate-100/80 rounded-full text-slate-500 hover:bg-slate-200 transition-colors" aria-label="ปิด">
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="px-6 pb-4 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex items-center gap-2 w-max">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as TabType)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all whitespace-nowrap",
-                      activeTab === tab.id 
-                        ? "bg-slate-800 text-white shadow-md shadow-slate-800/20" 
-                        : "bg-white/60 border border-white/60 text-slate-500 hover:bg-white/90 shadow-sm"
-                    )}
-                  >
-                    <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-pink-400" : "text-slate-400")} />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Content Scrollable Area */}
-            <div className="flex-1 overflow-y-auto px-6 pb-8 flex flex-col gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {activeTab === "bp" && renderBP()}
-              {activeTab === "weight" && renderWeight()}
-              {activeTab === "kicks" && renderKicks()}
-                                        </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      <div className="flex flex-col gap-6">
+        {activeTab === "bp" && renderBP()}
+        {activeTab === "weight" && renderWeight()}
+        {activeTab === "kicks" && renderKicks()}
+      </div>
+    </div>
   );
 }

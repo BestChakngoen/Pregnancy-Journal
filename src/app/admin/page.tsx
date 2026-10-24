@@ -68,7 +68,6 @@ export default function AdminPage() {
           <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
             <input 
               type="password" 
-              placeholder="รหัสผ่าน (admin123)"
               className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-800 focus:outline-none"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

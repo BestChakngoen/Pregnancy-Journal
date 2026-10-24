@@ -26,10 +26,6 @@ export default function EbookPage() {
     return () => {
       // คืนค่าหน้าจอกลับเป็นปกติเมื่อออกจากหน้านี้
       try {
-        if (screen.orientation && 'lock' in screen.orientation) {
-          // @ts-ignore
-          screen.orientation.lock('portrait').catch(() => {});
-        }
         if (screen.orientation && 'unlock' in screen.orientation) {
           screen.orientation.unlock();
         }
@@ -41,10 +37,6 @@ export default function EbookPage() {
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
-      }
-      if (screen.orientation && 'lock' in screen.orientation) {
-        // @ts-ignore
-        await screen.orientation.lock('portrait').catch(() => {});
       }
       if (screen.orientation && 'unlock' in screen.orientation) {
         screen.orientation.unlock();

@@ -143,7 +143,6 @@ export default function Onboarding() {
               required
               min="15"
               max="60"
-              placeholder="เช่น 28"
               className={inputClasses}
               value={formData.age}
               onChange={(e) => setFormData({ ...formData, age: e.target.value })}
@@ -159,7 +158,6 @@ export default function Onboarding() {
               required
               min="1"
               max="42"
-              placeholder="เช่น 24"
               className={inputClasses}
               value={formData.gestationalWeeks}
               onChange={(e) => setFormData({ ...formData, gestationalWeeks: e.target.value })}

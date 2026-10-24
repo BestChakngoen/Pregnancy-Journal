@@ -69,6 +69,7 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
           timestamp: new Date().toISOString(),
           isHighRisk
         });
+        window.dispatchEvent(new Event("bp-logged")); // ให้กราฟประวัติสุขภาพโหลดใหม่
       }
       
       // Visualize success
@@ -123,7 +124,6 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
                     type="number"
                     value={systolic}
                     onChange={(e) => setSystolic(e.target.value)}
-                    placeholder="120"
                     className="w-full text-center text-3xl font-bold p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-inner"
                   />
                 </div>
@@ -134,7 +134,6 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
                     type="number"
                     value={diastolic}
                     onChange={(e) => setDiastolic(e.target.value)}
-                    placeholder="80"
                     className="w-full text-center text-3xl font-bold p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-inner"
                   />
                 </div>

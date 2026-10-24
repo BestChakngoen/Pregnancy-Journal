@@ -20,29 +20,28 @@
 | โครงหน้า, ฟอนต์, พื้นหลัง, Toaster, ตัวครอบทุกหน้า | `src/app/layout.tsx` |
 | สี/animation/theme ส่วนกลาง | `src/app/globals.css` |
 | ชื่อแท็บ / meta | `src/app/layout.tsx` (`metadata`) |
-| หน้าแรก (สวัสดี, วงแหวนสัปดาห์, เมนูลัด, ทิปส์ประจำวัน) | `src/app/page.tsx` |
-| คำนวณสัปดาห์จากวันกำหนดคลอด (EDD) | `src/app/page.tsx` → `handleEddChange` |
+| หน้าแรก (สวัสดี, วงแหวนสัปดาห์, เมนูลัด, ทิปส์ประจำวัน) | `src/components/sections/HomeSection.tsx` |
+| คำนวณสัปดาห์จากวันกำหนดคลอด (EDD) | `src/components/sections/HomeSection.tsx` → `handleEddChange` |
 | วงแหวนอายุครรภ์ (40 สัปดาห์, input วันคลอด) | `src/components/ui/AnimatedRing.tsx` |
 | หน้าสมัคร/เข้าสู่ระบบด้วยชื่อ + รหัสผ่าน (Firebase Auth) | `src/app/login/page.tsx` (`nameToEmail`, `errorMessage`) |
 | ฟอร์มข้อมูลส่วนตัวหลังล็อกอิน (อายุ, อายุครรภ์, Gravida) | `src/app/onboarding/page.tsx` |
-| ออกจากระบบ | `src/app/profile/page.tsx` → `handleLogout`, `userStore.logout` |
-| โปรไฟล์ + เมนูโปรไฟล์ | `src/app/profile/page.tsx` |
+| ออกจากระบบ | `src/components/sections/ProfileSection.tsx` → `handleLogout`, `userStore.logout` |
+| โปรไฟล์ + เมนูโปรไฟล์ | `src/components/sections/ProfileSection.tsx` |
 | แก้ข้อมูลส่วนตัว (modal) | `src/components/modals/EditProfileModal.tsx` |
-| เปลี่ยนรหัสผ่าน (modal) | `src/components/modals/ChangePasswordModal.tsx` (เปิดจากเมนูใน `profile/page.tsx`) |
-| ประวัติสุขภาพ + กราฟ (tab ความดัน/น้ำหนัก/ลูกดิ้น) | `src/components/modals/HealthHistoryModal.tsx` |
+| เปลี่ยนรหัสผ่าน (modal) | `src/components/modals/ChangePasswordModal.tsx` (เปิดจากเมนูใน `sections/ProfileSection.tsx`) |
+| ประวัติสุขภาพ + กราฟ (tab ความดัน/น้ำหนัก/ลูกดิ้น) | `src/components/sections/TrackingSection.tsx` (แท็บ "ติดตาม") |
 | บันทึกความดัน **จากหน้าแรก** (ลง Firestore, เตือนถ้า ≥140/90) | `src/components/loggers/BloodPressureLogger.tsx` |
 | บันทึกความดัน/น้ำหนัก **จากหน้า tracking** (ลง localStorage) | `src/components/modals/TrackingModals.tsx` + `src/lib/trackingStore.ts` |
-| นับลูกดิ้น | `src/app/tracking/page.tsx` (`addKick`) + `trackingStore.ts` |
-| หน้า tracking (bento grid) | `src/app/tracking/page.tsx` |
+| นับลูกดิ้น | `src/components/sections/HealthLogSection.tsx` (`addKick`) + `trackingStore.ts` |
+| บันทึกสุขภาพ (bento grid; อยู่ต่อท้ายหน้าหลัก) | `src/components/sections/HealthLogSection.tsx` |
 | แบบประเมินความเสี่ยง (คำถาม + คะแนน + เกณฑ์สูง/กลาง/ต่ำ) | `src/app/assessment/page.tsx` (`QUESTIONS`, `calculateRisk`) |
 | ข้อสอบ Pre-test / Post-test (คำถาม, เฉลย) | `src/components/quiz/Quiz.tsx` (`QUESTIONS`) — หน้า `pre-test/page.tsx` กับ `post-test/page.tsx` เป็นแค่ wrapper ส่ง `type` + `title` |
 | แบบประเมินความพึงพอใจ (8 ข้อ, 1–5 ดาว, บันทึกลง Firestore) | `src/app/satisfaction/page.tsx` |
-| ศูนย์ความรู้ (ลำดับขั้น 1-2-3) | `src/app/education/page.tsx` |
-| E-book (iframe Heyzine, บังคับแนวนอน) | `src/app/education/ebook/page.tsx` (URL อยู่ใน `<iframe src>`) + ปุ่มเปิดใน `education/page.tsx` |
+| ศูนย์ความรู้ (ลำดับขั้น 1-2-3) | `src/components/sections/EducationSection.tsx` |
+| E-book (iframe Heyzine, บังคับแนวนอน) | `src/app/education/ebook/page.tsx` (URL อยู่ใน `<iframe src>`) + ปุ่มเปิดใน `sections/EducationSection.tsx` |
 | วิดีโอ + สรุปเนื้อหา | `src/app/videos/page.tsx` · ไฟล์วิดีโอ `public/videos/Video.mp4` · poster `public/images/lemon.jpg` |
 | หน้า Admin (รหัสผ่าน, รายชื่อผู้ใช้, พิมพ์เป็น PDF) | `src/app/admin/page.tsx` |
 | Popup แจ้งเตือนกลาง (success/error/warning/info) | UI: `src/components/ui/PopupAlert.tsx` · สั่งเปิด: `useAlertStore.getState().showAlert({...})` จาก `src/lib/alertStore.ts` |
-| Overlay "กรุณาหมุนจอ" (บังคับ portrait) | `src/components/ui/PortraitLockOverlay.tsx` |
 | แจ้งให้เปิดใน browser หลัก (LINE/FB/IG/Twitter) | `src/components/ui/ExternalBrowserRedirect.tsx` |
 | การ์ดเมนูลัด animation | `src/components/ui/AnimatedCard.tsx` |
 | เอฟเฟกต์ลอยตอนสำเร็จ/ผลดี | `src/components/ui/FloatingParticles.tsx` |
@@ -56,17 +55,17 @@
 
 | URL | ไฟล์ | หมายเหตุ |
 |---|---|---|
-| `/` | `page.tsx` | ถ้ายังไม่มี user → redirect `/login` |
+| `/` | `page.tsx` | รวม 4 section เลื่อนในหน้าเดียว (`#home`=หน้าหลัก+บันทึกสุขภาพ `#tracking`=ประวัติ `#education #profile`); ไม่มี user → redirect `/login` |
 | `/login` | `login/page.tsx` | สมัคร/เข้าสู่ระบบ; มีข้อมูลส่วนตัวใน Firestore แล้ว → `/` ไม่มี → `/onboarding` |
 | `/onboarding` | `onboarding/page.tsx` | ต้องล็อกอินก่อน (ไม่งั้นเด้งไป `/login`); เช็ค/สร้าง doc `users/{name}`; ถ้า Firestore พัง fallback เก็บ local |
-| `/tracking` | `tracking/page.tsx` | |
+| `/tracking` | `tracking/page.tsx` | redirect → `/#tracking` (ประวัติสุขภาพ: `sections/TrackingSection.tsx`) |
 | `/assessment` | `assessment/page.tsx` | ผลคำนวณแล้ว **ไม่ได้บันทึก** ที่ไหน |
-| `/education` | `education/page.tsx` | hub |
+| `/education` | `education/page.tsx` | redirect → `/#education` (เนื้อหาอยู่ที่ `sections/EducationSection.tsx`) |
 | `/education/ebook` | `education/ebook/page.tsx` | |
 | `/videos` | `videos/page.tsx` | |
 | `/pre-test`, `/post-test` | wrapper → `Quiz` | คะแนน **ไม่ได้บันทึก** ที่ไหน |
 | `/satisfaction` | `satisfaction/page.tsx` | บันทึก `satisfaction` ลง `users/{name}` (merge) |
-| `/profile` | `profile/page.tsx` | เปิด 2 modal |
+| `/profile` | `profile/page.tsx` | redirect → `/#profile` (เนื้อหาอยู่ที่ `sections/ProfileSection.tsx`) |
 | `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง |
 
 หน้าที่ซ่อม BottomNav: `/login /onboarding /assessment /pre-test /post-test /satisfaction /admin /education/ebook` (แก้ใน `hiddenPaths`; `/videos` **ไม่ได้อยู่ในรายการ** จึงมีเมนูล่างแสดงอยู่)
@@ -77,9 +76,9 @@
 |---|---|---|---|
 | โปรไฟล์ (`UserProfile`) | localStorage `bumply_user` + Firestore `users/{name}` | `userStore.loginOrSaveUser` (local), onboarding / EditProfileModal (Firestore) | ทุกหน้าผ่าน `useUserStore()` |
 | วันกำหนดคลอด (EDD) | localStorage เท่านั้น (ใน `bumply_user`) | `page.tsx` → `handleEddChange` | `AnimatedRing` |
-| ความดัน (หน้า tracking) | localStorage `bumply_tracking_data` | `TrackingModals` → `trackingStore.updateBloodPressure` | `tracking/page.tsx` |
-| น้ำหนัก, ลูกดิ้น | localStorage `bumply_tracking_data` | `trackingStore` | `tracking/page.tsx` (ประวัติ tab น้ำหนัก/ลูกดิ้นใน HealthHistoryModal ยังว่าง) |
-| ความดัน (หน้าแรก) | Firestore `users/{name}/bloodPressures` | `BloodPressureLogger` | `HealthHistoryModal` (30 รายการล่าสุด) |
+| ความดัน (หน้า tracking) | localStorage `bumply_tracking_data` | `TrackingModals` → `trackingStore.updateBloodPressure` | `sections/HealthLogSection.tsx` |
+| น้ำหนัก, ลูกดิ้น | localStorage `bumply_tracking_data` | `trackingStore` | `sections/HealthLogSection.tsx` (ประวัติ tab น้ำหนัก/ลูกดิ้นใน TrackingSection ยังว่าง) |
+| ความดัน (หน้าแรก) | Firestore `users/{name}/bloodPressures` | `BloodPressureLogger` | `sections/TrackingSection.tsx` (30 รายการล่าสุด) |
 | ความพึงพอใจ | Firestore `users/{name}.satisfaction` | `satisfaction/page.tsx` | `admin/page.tsx` (type มี field แต่ยังไม่แสดง) |
 | Popup state | Zustand (memory) | `showAlert` | `PopupAlert` |
 
@@ -93,14 +92,13 @@ src/components/
   loggers/BloodPressureLogger    bottom-sheet บันทึกความดัน → Firestore
   modals/EditProfileModal        แก้โปรไฟล์ → Firestore + local
   modals/ChangePasswordModal     เปลี่ยนรหัสผ่าน (reauthenticate + updatePassword)
-  modals/HealthHistoryModal      กราฟประวัติ (recharts) 3 tab
+  sections/TrackingSection       กราฟประวัติ (recharts) 3 tab
   modals/TrackingModals          export: Modal (base), BloodPressureModal, WeightModal
   quiz/Quiz                      ข้อสอบ ใช่/ไม่ใช่ 10 ข้อ ใช้ร่วม pre/post
   ui/AnimatedCard                การ์ดเมนู
   ui/AnimatedRing                วงแหวนสัปดาห์
   ui/FloatingParticles           particle ลอย
   ui/PopupAlert                  popup กลาง (ติดใน layout)
-  ui/PortraitLockOverlay         บังคับแนวตั้ง (ติดใน layout)
   ui/ExternalBrowserRedirect     กัน in-app browser (ติดใน layout)
   magicui/number-ticker.tsx      ใช้ใน AnimatedRing
 ```

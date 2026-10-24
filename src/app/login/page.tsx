@@ -169,7 +169,6 @@ export default function Login() {
           <input
             id="name"
             type="text" required autoComplete="username"
-            placeholder="เช่น แม่ส้ม, Sarah"
             className={inputClasses}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -185,7 +184,6 @@ export default function Login() {
             id="password"
             type="password" required minLength={6}
             autoComplete={isRegister ? "new-password" : "current-password"}
-            placeholder="อย่างน้อย 6 ตัวอักษร"
             className={inputClasses}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

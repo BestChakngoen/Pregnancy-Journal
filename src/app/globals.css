@@ -42,3 +42,11 @@ body {
   background-attachment: fixed;
   min-height: 100dvh;
 }
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+html {
+  scroll-behavior: smooth;
+}

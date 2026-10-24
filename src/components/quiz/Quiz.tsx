@@ -98,7 +98,7 @@ export default function Quiz({ type, title }: QuizProps) {
 
         <div className="mt-auto pt-8">
           <button
-            onClick={() => router.push("/education")}
+            onClick={() => router.push("/#education")}
             className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 active:scale-95 transition-all"
           >
             กลับสู่ศูนย์ความรู้

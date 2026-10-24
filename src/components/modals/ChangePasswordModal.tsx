@@ -136,7 +136,6 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                 <input
                   id="new-password"
                   type="password" required minLength={6} autoComplete="new-password"
-                  placeholder="อย่างน้อย 6 ตัวอักษร"
                   className={inputClasses}
                   value={next}
                   onChange={(e) => setNext(e.target.value)}

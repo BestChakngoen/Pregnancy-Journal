@@ -4,7 +4,6 @@ import "./globals.css";
 import BottomNav from "@/components/layout/BottomNav";
 import { Toaster } from "react-hot-toast";
 import PopupAlert from "@/components/ui/PopupAlert";
-import PortraitLockOverlay from "@/components/ui/PortraitLockOverlay";
 import ExternalBrowserRedirect from "@/components/ui/ExternalBrowserRedirect";
 
 const promptFont = Prompt({
@@ -27,7 +26,6 @@ export default function RootLayout({
     <html lang="th" className={`${promptFont.variable} font-sans antialiased`}>
       <body className="min-h-dvh flex flex-col md:flex-row bg-slate-50 overflow-x-hidden">
         <ExternalBrowserRedirect />
-        <PortraitLockOverlay />
         <PopupAlert />
         <Toaster 
           position="top-center" 
@@ -54,7 +52,7 @@ export default function RootLayout({
           <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent opacity-80" />
           <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-transparent opacity-80 animate-blob" />
           
-          <div className="flex-1 w-full flex flex-col pb-20 md:pb-0">
+          <div className="flex-1 w-full flex flex-col pb-20 max-md:landscape:pb-14 md:pb-0">
             {children}
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,11 +51,19 @@ interface BPModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (bp: string) => void;
+  initial?: string; // ค่าเดิม "120/80" เมื่อเปิดแก้ไข
 }
 
-export function BloodPressureModal({ isOpen, onClose, onSave }: BPModalProps) {
+export function BloodPressureModal({ isOpen, onClose, onSave, initial = "" }: BPModalProps) {
   const [sys, setSys] = useState("");
   const [dia, setDia] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const [s = "", d = ""] = initial.split("/");
+    setSys(s);
+    setDia(d);
+  }, [isOpen, initial]);
 
   const handleSave = () => {
     if (sys && dia) {
@@ -67,7 +75,7 @@ export function BloodPressureModal({ isOpen, onClose, onSave }: BPModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="บันทึกความดันโลหิต">
+    <Modal isOpen={isOpen} onClose={onClose} title={initial ? "แก้ไขความดันโลหิต" : "บันทึกความดันโลหิต"}>
       <div className="flex gap-4 items-center justify-center mb-6">
         <div className="flex flex-col gap-1 w-full">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-2">Systolic (ตัวบน)</label>
@@ -75,7 +83,6 @@ export function BloodPressureModal({ isOpen, onClose, onSave }: BPModalProps) {
             type="number"
             value={sys}
             onChange={(e) => setSys(e.target.value)}
-            placeholder="120"
             className="w-full text-center text-3xl font-bold text-slate-800 py-3 rounded-2xl bg-white/50 border-2 border-slate-100 focus:border-blue-400 focus:ring-0 transition-colors placeholder:text-slate-300"
           />
         </div>
@@ -86,7 +93,6 @@ export function BloodPressureModal({ isOpen, onClose, onSave }: BPModalProps) {
             type="number"
             value={dia}
             onChange={(e) => setDia(e.target.value)}
-            placeholder="80"
             className="w-full text-center text-3xl font-bold text-slate-800 py-3 rounded-2xl bg-white/50 border-2 border-slate-100 focus:border-blue-400 focus:ring-0 transition-colors placeholder:text-slate-300"
           />
         </div>
@@ -109,10 +115,15 @@ interface WeightModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (weight: number) => void;
+  initial?: number; // ค่าเดิมเมื่อเปิดแก้ไข
 }
 
-export function WeightModal({ isOpen, onClose, onSave }: WeightModalProps) {
+export function WeightModal({ isOpen, onClose, onSave, initial = 0 }: WeightModalProps) {
   const [weight, setWeight] = useState("");
+
+  useEffect(() => {
+    if (isOpen) setWeight(initial ? String(initial) : "");
+  }, [isOpen, initial]);
 
   const handleSave = () => {
     if (weight) {
@@ -123,14 +134,13 @@ export function WeightModal({ isOpen, onClose, onSave }: WeightModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="บันทึกน้ำหนัก">
+    <Modal isOpen={isOpen} onClose={onClose} title={initial ? "แก้ไขน้ำหนัก" : "บันทึกน้ำหนัก"}>
       <div className="flex flex-col gap-1 w-full mb-6 relative">
         <input
           type="number"
           step="0.1"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          placeholder="55.0"
           className="w-full text-center text-4xl font-extrabold text-slate-800 py-4 pr-12 rounded-2xl bg-white/50 border-2 border-slate-100 focus:border-amber-400 focus:ring-0 transition-colors placeholder:text-slate-300"
         />
         <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold">kg</span>
