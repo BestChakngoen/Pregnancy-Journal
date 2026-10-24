@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// ข้อมูลผู้ใช้อยู่ที่ users/{uid} — uid มาจาก Firebase Auth ผู้ใช้ปลอมไม่ได้
+// admin = บัญชีที่มีเอกสาร admins/{uid} — คนแรกเพิ่มจาก Firebase Console, คนต่อไป admin เพิ่มจากหน้า /admin
+// path อื่นที่ไม่ได้เขียนไว้ถูกปฏิเสธทั้งหมด
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+
+    function optString(d, key, max) {
+      return !(key in d) || (d[key] is string && d[key].size() <= max);
+    }
+
+    function validProfile(d) {
+      return d.keys().hasOnly(['name', 'age', 'gestationalWeeks', 'gravida', 'expectedDeliveryDate', 'createdAt', 'satisfaction'])
+        && optString(d, 'name', 100)
+        && optString(d, 'age', 10)
+        && optString(d, 'gestationalWeeks', 10)
+        && optString(d, 'gravida', 10)
+        && optString(d, 'expectedDeliveryDate', 30)
+        && optString(d, 'createdAt', 40)
+        && (!('satisfaction' in d) || (d.satisfaction is map && d.satisfaction.size() <= 50));
+    }
+
+    function validBP(d) {
+      return d.keys().hasOnly(['systolic', 'diastolic', 'timestamp', 'isHighRisk'])
+        && d.systolic is int && d.systolic >= 40 && d.systolic <= 300
+        && d.diastolic is int && d.diastolic >= 20 && d.diastolic <= 200
+        && d.timestamp is string && d.timestamp.size() <= 40
+        && d.isHighRisk is bool;
+    }
+
+    // admin เพิ่ม/ลบ admin คนอื่นจากหน้า /admin ได้ แต่ลบตัวเองไม่ได้ จึงเหลือ admin อย่างน้อย 1 คนเสมอ
+    // admin คนแรกเพิ่มจาก Firebase Console
+    match /admins/{userId} {
+      allow get: if isOwner(userId) || isAdmin(); // ให้หน้า /admin เช็คสิทธิ์ของตัวเองได้
+      allow list: if isAdmin();
+      allow create: if isAdmin()
+        && userId.size() <= 128
+        && request.resource.data.keys().hasOnly(['name', 'addedBy', 'addedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.addedBy == request.auth.uid
+        && request.resource.data.addedAt is string && request.resource.data.addedAt.size() <= 40;
+      allow delete: if isAdmin() && userId != request.auth.uid;
+      allow update: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) && validProfile(request.resource.data);
+      allow delete: if false;
+
+      match /bloodPressures/{logId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && validBP(request.resource.data);
+        allow update, delete: if false;
+      }
+    }
+  }
+}

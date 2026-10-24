@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, KeyRound, Loader2 } from "lucide-react";
-import { auth } from "@/lib/firebase";
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface ChangePasswordModalProps {
@@ -19,6 +17,8 @@ const errorMessage = (code: string) => {
       return "รหัสผ่านปัจจุบันไม่ถูกต้อง";
     case "auth/weak-password":
       return "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร";
+    case "auth/password-does-not-meet-requirements":
+      return "รหัสผ่านไม่ผ่านเงื่อนไขความปลอดภัย กรุณาตั้งให้ยาวขึ้นและผสมตัวอักษรกับตัวเลข";
     case "auth/too-many-requests":
       return "ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่";
     case "auth/network-request-failed":
@@ -52,14 +52,18 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
       return;
     }
 
-    const fbUser = auth.currentUser;
-    if (!fbUser?.email) {
-      setError("บัญชีนี้ยังไม่ได้ผูกกับรหัสผ่าน กรุณาออกจากระบบแล้วสมัครใช้งานใหม่");
-      return;
-    }
-
     setIsSaving(true);
     try {
+      // auth SDK โหลดเฉพาะตอนใช้ (ไม่อยู่ใน bundle หน้าหลัก)
+      const [{ auth }, { EmailAuthProvider, reauthenticateWithCredential, updatePassword }] =
+        await Promise.all([import("@/lib/auth"), import("firebase/auth")]);
+      await auth.authStateReady(); // เพิ่งสร้าง auth: รอกู้ session ที่ล็อกอินไว้ก่อนอ่าน currentUser
+      const fbUser = auth.currentUser;
+      if (!fbUser?.email) {
+        setError("บัญชีนี้ยังไม่ได้ผูกกับรหัสผ่าน กรุณาออกจากระบบแล้วสมัครใช้งานใหม่");
+        return;
+      }
+
       // Firebase บังคับยืนยันตัวตนซ้ำก่อนเปลี่ยนรหัสผ่าน
       await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, current));
       await updatePassword(fbUser, next);

@@ -38,9 +38,17 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  background-image: linear-gradient(135deg, #e0f2fe 0%, #fdf2f8 100%);
-  background-attachment: fixed;
   min-height: 100dvh;
+}
+
+/* พื้นหลังไล่สีแบบติดจอ: ใช้ชั้น fixed แทน background-attachment: fixed ซึ่งทำให้ต้องวาดใหม่ทั้งจอทุกครั้งที่เลื่อน */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(135deg, #e0f2fe 0%, #fdf2f8 100%);
 }
 
 @utility pb-safe {
@@ -50,3 +58,6 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* มือถือแนวนอนจริง (กว้าง ≥540px, เตี้ย) — ไม่ใช้ orientation เพราะตอนคีย์บอร์ดเปิดในแนวตั้ง จอจะกลายเป็น "landscape" ชั่วคราว */
+@custom-variant phone-landscape (@media (min-width: 540px) and (max-height: 500px));

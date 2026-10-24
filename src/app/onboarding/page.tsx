@@ -7,15 +7,17 @@ import Image from "next/image";
 import { ChevronRight, CalendarDays, Activity, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
-import { db, auth } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
+import { auth } from "@/lib/auth";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore/lite";
 
 export default function Onboarding() {
   const router = useRouter();
   const { loginOrSaveUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
   const [authName, setAuthName] = useState("");
+  const [uid, setUid] = useState("");
   const [formData, setFormData] = useState({
     age: "",
     gestationalWeeks: "",
@@ -25,19 +27,21 @@ export default function Onboarding() {
   // ต้องล็อกอินที่หน้า /login ก่อน ชื่อมาจากบัญชีที่ล็อกอิน
   useEffect(() => {
     return onAuthStateChanged(auth, (fbUser) => {
-      if (fbUser?.displayName) setAuthName(fbUser.displayName);
-      else router.replace("/login");
+      if (fbUser?.displayName) {
+        setAuthName(fbUser.displayName);
+        setUid(fbUser.uid);
+      } else router.replace("/login");
     });
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authName) return;
+    if (!authName || !uid) return;
     
     setIsLoading(true);
     
     try {
-      const userRef = doc(db, "users", authName.toLowerCase());
+      const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {

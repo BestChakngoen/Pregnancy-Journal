@@ -1,7 +1,6 @@
 ﻿// src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore/lite";
 
 // TODO: Replace with your actual Firebase Project Configuration
 // à¸„à¸¸à¸“à¹à¸¡à¹ˆ/à¸„à¸¸à¸“à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸•à¹‰à¸­à¸‡à¸™à¸³à¸„à¹ˆà¸²à¹€à¸«à¸¥à¹ˆà¸²à¸™à¸µà¹‰à¸¡à¸²à¸ˆà¸²à¸ Firebase Console > Project Settings
@@ -20,6 +19,13 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firestore
 const db = getFirestore(app);
 
-const auth = getAuth(app);
 
-export { app, db, auth };
+export { app, db };
+
+// uid ของบัญชีที่ล็อกอินจริง (จาก Firebase Auth ไม่ใช่ localStorage ที่ผู้ใช้แก้เองได้) — Security Rules ตรวจสิทธิ์ด้วย uid นี้
+// โหลด auth แบบ lazy แล้วรอกู้ session ก่อน Firestore จึงจะแนบ token ของผู้ใช้ไปกับทุกคำขอ
+export async function currentUid(): Promise<string | null> {
+  const { auth } = await import("@/lib/auth");
+  await auth.authStateReady();
+  return auth.currentUser?.uid ?? null;
+}

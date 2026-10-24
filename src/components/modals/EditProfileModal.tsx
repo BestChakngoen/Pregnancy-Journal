@@ -6,8 +6,8 @@ import { X, Check, User, CalendarDays, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
 import { useUserStore } from "@/lib/userStore";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { db, currentUid } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore/lite";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface EditProfileModalProps {
@@ -52,8 +52,9 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
       };
 
       // Attempt to save to Firebase
-      const userRef = doc(db, "users", newProfile.name.toLowerCase());
-      await setDoc(userRef, newProfile, { merge: true });
+      const uid = await currentUid();
+      if (!uid) throw new Error("not signed in"); // ตกไปบันทึกในเครื่องตาม catch ด้านล่าง
+      await setDoc(doc(db, "users", uid), newProfile, { merge: true });
       
       // Update local state
       loginOrSaveUser(newProfile);

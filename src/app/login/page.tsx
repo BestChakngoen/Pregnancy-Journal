@@ -6,8 +6,9 @@ import { motion } from "framer-motion";
 import { ChevronRight, User, KeyRound, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
-import { db, auth } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { auth, nameToEmail } from "@/lib/auth";
+import { doc, getDoc } from "firebase/firestore/lite";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -15,15 +16,6 @@ import {
 } from "firebase/auth";
 
 const MAX_NAME_BYTES = 30;
-
-// Firebase Auth ต้องใช้อีเมล แต่ผู้ใช้ล็อกอินด้วยชื่อ จึงแปลงชื่อ (lowercase) เป็นอีเมลภายใน
-// hex เพราะอีเมลรับตัวอักษรไทยไม่ได้ และ local part ยาวได้ไม่เกิน 64 ตัว
-const nameToEmail = (name: string) => {
-  const hex = Array.from(new TextEncoder().encode(name.toLowerCase()))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `${hex}@momsafe.app`;
-};
 
 const errorMessage = (code: string) => {
   switch (code) {
@@ -35,6 +27,8 @@ const errorMessage = (code: string) => {
       return "ชื่อหรือรหัสผ่านไม่ถูกต้อง";
     case "auth/weak-password":
       return "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    case "auth/password-does-not-meet-requirements":
+      return "รหัสผ่านไม่ผ่านเงื่อนไขความปลอดภัย กรุณาตั้งให้ยาวขึ้นและผสมตัวอักษรกับตัวเลข";
     case "auth/too-many-requests":
       return "ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่";
     case "auth/network-request-failed":
@@ -77,18 +71,21 @@ export default function Login() {
     try {
       const email = nameToEmail(trimmed);
       let displayName = trimmed;
+      let uid: string;
       if (isRegister) {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: trimmed });
+        uid = cred.user.uid;
       } else {
         const cred = await signInWithEmailAndPassword(auth, email, password);
         displayName = cred.user.displayName || trimmed;
+        uid = cred.user.uid;
       }
 
       // มีข้อมูลส่วนตัวแล้ว -> เข้าหน้าหลัก, ยังไม่มี -> ไปกรอกข้อมูลส่วนตัว
       let profile = null;
       try {
-        const snap = await getDoc(doc(db, "users", displayName.toLowerCase()));
+        const snap = await getDoc(doc(db, "users", uid));
         if (snap.exists() && snap.data().age && snap.data().gestationalWeeks) profile = snap.data();
       } catch (err) {
         console.error("Error loading profile:", err);

@@ -6,8 +6,8 @@ import { X, Check, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
 import { useUserStore } from "@/lib/userStore";
-import { db } from "@/lib/firebase";
-import { doc, collection, addDoc } from "firebase/firestore";
+import { db, currentUid } from "@/lib/firebase";
+import { doc, collection, addDoc } from "firebase/firestore/lite";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface BloodPressureLoggerProps {
@@ -59,10 +59,10 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
     };
 
     try {
-      if (user?.name) {
+      const uid = user?.name ? await currentUid() : null;
+      if (uid) {
         // Attempt to save to Firebase subcollection
-        const userRef = doc(db, "users", user.name.toLowerCase());
-        const logsRef = collection(userRef, "bloodPressures");
+        const logsRef = collection(doc(db, "users", uid), "bloodPressures");
         await addDoc(logsRef, {
           systolic: sys,
           diastolic: dia,

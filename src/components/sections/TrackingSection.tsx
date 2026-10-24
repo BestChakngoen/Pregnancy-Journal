@@ -2,12 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { Activity, AlertTriangle, TrendingUp, Scale, Baby } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import dynamic from "next/dynamic";
 import { useUserStore } from "@/lib/userStore";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
+import { db, currentUid } from "@/lib/firebase";
+import { collection, query, orderBy, getDocs, limit } from "firebase/firestore/lite";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
+
+// กราฟโหลดแยกหลังหน้าแสดงผลแล้ว (กล่องกราฟสูงคงที่ จึงไม่ทำให้หน้ากระโดด)
+const charts = () => import("@/components/charts/HistoryCharts");
+const BPChart = dynamic(() => charts().then((m) => m.BPChart), { ssr: false });
+const WeightChart = dynamic(() => charts().then((m) => m.WeightChart), { ssr: false });
+const KicksChart = dynamic(() => charts().then((m) => m.KicksChart), { ssr: false });
 
 interface BPLog {
   timestamp: string;
@@ -43,7 +49,9 @@ export default function TrackingSection() {
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
-      const logsRef = collection(db, "users", user!.name.toLowerCase(), "bloodPressures");
+      const uid = await currentUid();
+      if (!uid) throw new Error("not signed in");
+      const logsRef = collection(db, "users", uid, "bloodPressures");
       const q = query(logsRef, orderBy("timestamp", "asc"), limit(30));
       const snapshot = await getDocs(q);
       
@@ -106,17 +114,7 @@ export default function TrackingSection() {
           </div>
         ) : (
           <div className="h-[220px] w-full -ml-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={logs} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
-                <ReferenceLine y={90} stroke="#fca5a5" strokeDasharray="4 4" />
-                <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} domain={['dataMin - 10', 'dataMax + 10']} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} labelStyle={{ fontWeight: 'bold', color: '#334155', marginBottom: '4px' }} itemStyle={{ fontWeight: 600, fontSize: '14px' }} />
-                <Line type="monotone" dataKey="systolic" name="SYS" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
-                <Line type="monotone" dataKey="diastolic" name="DIA" stroke="#f472b6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#f472b6', stroke: '#fff', strokeWidth: 2 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <BPChart data={logs} />
           </div>
         )}
         
@@ -161,14 +159,7 @@ export default function TrackingSection() {
           แนวโน้มน้ำหนัก
         </h3>
         <div className="h-[220px] w-full -ml-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={[]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} domain={['dataMin - 1', 'dataMax + 1']} />
-              <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-              <Line type="monotone" dataKey="weight" name="น้ำหนัก" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <WeightChart />
         </div>
       </div>
 
@@ -202,15 +193,7 @@ export default function TrackingSection() {
           สถิติการดิ้นย้อนหลัง
         </h3>
         <div className="h-[220px] w-full -ml-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={[]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <ReferenceLine y={10} stroke="#fca5a5" strokeDasharray="4 4" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} />
-              <Tooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-              <Bar dataKey="count" name="จำนวนครั้ง" fill="#d946ef" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <KicksChart />
         </div>
       </div>
 

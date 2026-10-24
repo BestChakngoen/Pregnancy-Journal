@@ -7,11 +7,12 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Lightbulb, ChevronRight, User, Bell, Activity, Loader2 } from "lucide-react";
 import BloodPressureLogger from "@/components/loggers/BloodPressureLogger";
 import { useUserStore } from "@/lib/userStore";
+import { currentUid } from "@/lib/firebase";
 
 export default function HomeSection() {
   const router = useRouter();
   const [isBPLoggerOpen, setIsBPLoggerOpen] = useState(false);
-  const { user, isLoaded, loginOrSaveUser } = useUserStore();
+  const { user, isLoaded, loginOrSaveUser, logout } = useUserStore();
 
   const handleEddChange = (newEdd: string) => {
     if (!user) return;
@@ -40,6 +41,19 @@ export default function HomeSection() {
       router.replace("/login");
     }
   }, [isLoaded, user, router]);
+
+  // localStorage บอกแค่ว่าเคยล็อกอิน (แก้เองได้): ถ้าไม่มี session Firebase จริง เช่นหมดอายุหรือบัญชีเก่าที่ไม่มีรหัสผ่าน ให้ล็อกอินใหม่
+  useEffect(() => {
+    if (!user?.name) return;
+    currentUid()
+      .then((uid) => {
+        if (!uid) {
+          logout();
+          router.replace("/login");
+        }
+      })
+      .catch(() => {}); // โหลด auth ไม่ได้ (เช่นออฟไลน์) -> ไม่เตะออก
+  }, [user?.name, router]);
 
   if (!isLoaded || !user) {
     return (

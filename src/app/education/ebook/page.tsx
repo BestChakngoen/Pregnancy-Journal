@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function EbookPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     // พยายามบังคับหน้าจอให้เป็นแนวนอนเมื่อเข้ามาหน้านี้ (มือถือ)
@@ -49,15 +52,18 @@ export default function EbookPage() {
     }, 300);
   };
 
-  return (
-    <motion.div 
+  // portal ไป body: layout หลักมี max-width / sidebar offset / backdrop-blur (ทำให้ fixed ติดกับกล่องนั้นแทนจอ)
+  if (!mounted) return null;
+
+  return createPortal(
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      className="flex flex-col min-h-dvh bg-slate-900"
+      className="fixed inset-0 z-[60] flex flex-col bg-slate-900"
     >
       {/* Header */}
-      <header className="flex items-center p-4 bg-white/90 backdrop-blur-md shadow-sm shrink-0 relative z-10">
+      <header className="flex items-center p-4 phone-landscape:p-1 bg-white/90 backdrop-blur-md shadow-sm shrink-0 relative z-10">
         <button 
           onClick={handleBack} 
           className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors"
@@ -76,6 +82,7 @@ export default function EbookPage() {
           allowFullScreen
         ></iframe>
       </main>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }

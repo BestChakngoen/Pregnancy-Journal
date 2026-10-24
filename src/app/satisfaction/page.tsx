@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { db, currentUid } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore/lite";
 import { useUserStore } from "@/lib/userStore";
 
 const QUESTIONS = [
@@ -56,8 +56,9 @@ export default function SatisfactionSurvey() {
         // Last step: Save to Firebase
         if (user?.name) {
           try {
-            const userRef = doc(db, "users", user.name.toLowerCase());
-            await setDoc(userRef, { satisfaction: newAnswers }, { merge: true });
+            const uid = await currentUid();
+            if (!uid) throw new Error("not signed in");
+            await setDoc(doc(db, "users", uid), { satisfaction: newAnswers }, { merge: true });
           } catch (err) {
             console.error("Error saving satisfaction survey:", err);
           }

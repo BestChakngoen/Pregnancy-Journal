@@ -3,8 +3,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 export interface UserProfile {
   name: string;
@@ -39,7 +37,8 @@ export function useUserStore() {
 
  const logout = () => {
  localStorage.removeItem("bumply_user");
- signOut(auth).catch(() => {});
+ localStorage.removeItem("bumply_tracking_data"); // ข้อมูลสุขภาพ: ไม่ให้ค้างเครื่องให้คนถัดไปเห็น
+ import("@/lib/auth").then((m) => m.signOutUser()).catch(() => {});
  setUser(null);
  };
 

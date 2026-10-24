@@ -9,7 +9,7 @@
 - **ชื่อแอป:** MomSafe (key ใน localStorage ยังขึ้นต้น `bumply_` โดยตั้งใจ เพื่อไม่ให้ผู้ใช้เดิมหลุดจากระบบ)
 - **Stack:** Next.js 16 (App Router) · React 19 · Tailwind v4 · Framer Motion · Zustand · Firebase Firestore · Recharts · react-hot-toast · lucide-react
 - **ภาษา UI:** ไทยทั้งหมด (ฟอนต์ Prompt) · mobile-first, desktop มี sidebar
-- **Login:** Firebase Auth (Email/Password) โดยแปลงชื่อเป็นอีเมลภายใน `{hex ของชื่อ}@momsafe.app` (`login/page.tsx`); ชื่อที่แสดงเก็บใน `displayName`. ข้อมูลใน Firestore ยังใช้ชื่อ (lowercase) เป็น document id `users/{name}` ไม่ใช่ uid
+- **Login:** Firebase Auth (Email/Password) โดยแปลงชื่อเป็นอีเมลภายใน `{hex ของชื่อ}@momsafe.app` (`login/page.tsx`); ชื่อที่แสดงเก็บใน `displayName`. ข้อมูลใน Firestore ใช้ **uid** เป็น document id `users/{uid}` (เอา uid จาก `currentUid()` ใน `lib/firebase.ts` ไม่ใช่จาก localStorage) — สิทธิ์ตรวจโดย `firestore.rules`
 - **ข้อมูลอยู่ 2 ที่:** localStorage (โปรไฟล์ + น้ำหนัก/ลูกดิ้น/ความดันหน้า tracking) กับ Firestore (โปรไฟล์, ความดันจาก Dashboard, ผลความพึงพอใจ)
 
 ## 2. ถ้าจะแก้... ให้ไปที่...
@@ -40,13 +40,14 @@
 | ศูนย์ความรู้ (ลำดับขั้น 1-2-3) | `src/components/sections/EducationSection.tsx` |
 | E-book (iframe Heyzine, บังคับแนวนอน) | `src/app/education/ebook/page.tsx` (URL อยู่ใน `<iframe src>`) + ปุ่มเปิดใน `sections/EducationSection.tsx` |
 | วิดีโอ + สรุปเนื้อหา | `src/app/videos/page.tsx` · ไฟล์วิดีโอ `public/videos/Video.mp4` · poster `public/images/lemon.jpg` |
-| หน้า Admin (รหัสผ่าน, รายชื่อผู้ใช้, พิมพ์เป็น PDF) | `src/app/admin/page.tsx` |
+| หน้า Admin (ล็อกอินบัญชีที่มีเอกสาร `admins/{uid}`, รายชื่อผู้ใช้, พิมพ์เป็น PDF) | `src/app/admin/page.tsx` · จัดการผู้ดูแล: `src/components/admin/AdminManager.tsx` (admin เพิ่ม/ถอนสิทธิ์คนอื่นด้วย UID ได้ ถอนตัวเองไม่ได้; admin คนแรกเพิ่ม `admins/{uid}` ใน Firebase Console; หน้า /admin แสดง UID ให้คัดลอกถ้ายังไม่มีสิทธิ์) |
+| Firestore Security Rules | `firestore.rules` (deploy เอง: `firebase deploy --only firestore:rules` — CI deploy แค่ hosting) |
 | Popup แจ้งเตือนกลาง (success/error/warning/info) | UI: `src/components/ui/PopupAlert.tsx` · สั่งเปิด: `useAlertStore.getState().showAlert({...})` จาก `src/lib/alertStore.ts` |
 | แจ้งให้เปิดใน browser หลัก (LINE/FB/IG/Twitter) | `src/components/ui/ExternalBrowserRedirect.tsx` |
 | การ์ดเมนูลัด animation | `src/components/ui/AnimatedCard.tsx` |
 | เอฟเฟกต์ลอยตอนสำเร็จ/ผลดี | `src/components/ui/FloatingParticles.tsx` |
 | ตัวเลขนับขึ้น | `src/components/magicui/number-ticker.tsx` (ใช้ใน AnimatedRing) |
-| Firebase config / init | `src/lib/firebase.ts` |
+| Firebase config / init | `src/lib/firebase.ts` (app + Firestore **lite** — ไม่มี realtime/offline) · Auth แยกที่ `src/lib/auth.ts` (หน้าหลักโหลดแบบ `import()` ตอนใช้) |
 | helper ผสม class (`cn`) | `src/lib/utils.ts` |
 | origin ที่อนุญาตตอน dev (tunnel) | `next.config.ts` → `allowedDevOrigins` |
 | Deploy (Firebase Hosting) | `firebase.json`, `.firebaserc`, `next.config.ts` (`output: "export"`), auto-deploy: `.github/workflows/firebase-hosting.yml` (push main) |
@@ -57,14 +58,14 @@
 |---|---|---|
 | `/` | `page.tsx` | รวม 4 section เลื่อนในหน้าเดียว (`#home`=หน้าหลัก+บันทึกสุขภาพ `#tracking`=ประวัติ `#education #profile`); ไม่มี user → redirect `/login` |
 | `/login` | `login/page.tsx` | สมัคร/เข้าสู่ระบบ; มีข้อมูลส่วนตัวใน Firestore แล้ว → `/` ไม่มี → `/onboarding` |
-| `/onboarding` | `onboarding/page.tsx` | ต้องล็อกอินก่อน (ไม่งั้นเด้งไป `/login`); เช็ค/สร้าง doc `users/{name}`; ถ้า Firestore พัง fallback เก็บ local |
+| `/onboarding` | `onboarding/page.tsx` | ต้องล็อกอินก่อน (ไม่งั้นเด้งไป `/login`); เช็ค/สร้าง doc `users/{uid}`; ถ้า Firestore พัง fallback เก็บ local |
 | `/tracking` | `tracking/page.tsx` | redirect → `/#tracking` (ประวัติสุขภาพ: `sections/TrackingSection.tsx`) |
 | `/assessment` | `assessment/page.tsx` | ผลคำนวณแล้ว **ไม่ได้บันทึก** ที่ไหน |
 | `/education` | `education/page.tsx` | redirect → `/#education` (เนื้อหาอยู่ที่ `sections/EducationSection.tsx`) |
 | `/education/ebook` | `education/ebook/page.tsx` | |
 | `/videos` | `videos/page.tsx` | |
 | `/pre-test`, `/post-test` | wrapper → `Quiz` | คะแนน **ไม่ได้บันทึก** ที่ไหน |
-| `/satisfaction` | `satisfaction/page.tsx` | บันทึก `satisfaction` ลง `users/{name}` (merge) |
+| `/satisfaction` | `satisfaction/page.tsx` | บันทึก `satisfaction` ลง `users/{uid}` (merge) |
 | `/profile` | `profile/page.tsx` | redirect → `/#profile` (เนื้อหาอยู่ที่ `sections/ProfileSection.tsx`) |
 | `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง |
 
@@ -74,12 +75,12 @@
 
 | ข้อมูล | ที่เก็บ | เขียนโดย | อ่านโดย |
 |---|---|---|---|
-| โปรไฟล์ (`UserProfile`) | localStorage `bumply_user` + Firestore `users/{name}` | `userStore.loginOrSaveUser` (local), onboarding / EditProfileModal (Firestore) | ทุกหน้าผ่าน `useUserStore()` |
+| โปรไฟล์ (`UserProfile`) | localStorage `bumply_user` + Firestore `users/{uid}` | `userStore.loginOrSaveUser` (local), onboarding / EditProfileModal (Firestore) | ทุกหน้าผ่าน `useUserStore()` |
 | วันกำหนดคลอด (EDD) | localStorage เท่านั้น (ใน `bumply_user`) | `page.tsx` → `handleEddChange` | `AnimatedRing` |
 | ความดัน (หน้า tracking) | localStorage `bumply_tracking_data` | `TrackingModals` → `trackingStore.updateBloodPressure` | `sections/HealthLogSection.tsx` |
 | น้ำหนัก, ลูกดิ้น | localStorage `bumply_tracking_data` | `trackingStore` | `sections/HealthLogSection.tsx` (ประวัติ tab น้ำหนัก/ลูกดิ้นใน TrackingSection ยังว่าง) |
-| ความดัน (หน้าแรก) | Firestore `users/{name}/bloodPressures` | `BloodPressureLogger` | `sections/TrackingSection.tsx` (30 รายการล่าสุด) |
-| ความพึงพอใจ | Firestore `users/{name}.satisfaction` | `satisfaction/page.tsx` | `admin/page.tsx` (type มี field แต่ยังไม่แสดง) |
+| ความดัน (หน้าแรก) | Firestore `users/{uid}/bloodPressures` | `BloodPressureLogger` | `sections/TrackingSection.tsx` (30 รายการล่าสุด) |
+| ความพึงพอใจ | Firestore `users/{uid}.satisfaction` | `satisfaction/page.tsx` | `admin/page.tsx` (type มี field แต่ยังไม่แสดง) |
 | Popup state | Zustand (memory) | `showAlert` | `PopupAlert` |
 
 Stores: `src/lib/userStore.ts`, `src/lib/trackingStore.ts` เป็น **custom hook ธรรมดา (useState + localStorage)** ไม่ใช่ Zustand — แต่ละที่ที่เรียกมี state ของตัวเอง ไม่ sync กัน. มีแค่ `alertStore.ts` ที่ใช้ Zustand จริง
@@ -92,7 +93,7 @@ src/components/
   loggers/BloodPressureLogger    bottom-sheet บันทึกความดัน → Firestore
   modals/EditProfileModal        แก้โปรไฟล์ → Firestore + local
   modals/ChangePasswordModal     เปลี่ยนรหัสผ่าน (reauthenticate + updatePassword)
-  sections/TrackingSection       กราฟประวัติ (recharts) 3 tab
+  sections/TrackingSection       ประวัติ 3 tab; กราฟ recharts อยู่ `charts/HistoryCharts.tsx` (lazy ผ่าน next/dynamic)
   modals/TrackingModals          export: Modal (base), BloodPressureModal, WeightModal
   quiz/Quiz                      ข้อสอบ ใช่/ไม่ใช่ 10 ข้อ ใช้ร่วม pre/post
   ui/AnimatedCard                การ์ดเมนู
@@ -114,8 +115,8 @@ src/components/
 
 ## 7. จุดที่ควรรู้ก่อนแก้ (พบระหว่างอ่านโค้ด)
 
-1. **Firebase API key ฝังเป็น fallback ใน `src/lib/firebase.ts`** (ปกติ key ของ web config ไม่ถือเป็นความลับ แต่ความปลอดภัยจริงขึ้นกับ Firestore Security Rules — ไม่มี rules ใน repo ให้ตรวจ)
-2. **รหัส Admin เป็น `admin123` เช็คฝั่ง client** และพิมพ์บอกใน placeholder (`admin/page.tsx`) — ใครก็เข้าได้ และ Firestore ที่ถูกอ่านต้องเปิดให้ client อ่านทั้ง collection `users`
+1. **Firebase API key ฝังเป็น fallback ใน `src/lib/firebase.ts`** (ปกติ key ของ web config ไม่ถือเป็นความลับ แต่ความปลอดภัยจริงขึ้นกับ Firestore Security Rules — rules อยู่ที่ `firestore.rules`)
+2. ~~รหัส Admin `admin123` ฝั่ง client~~ — เปลี่ยนเป็นรายชื่อ `admins/{uid}` + `firestore.rules` แล้ว
 5. **ความดันมี 2 ทางที่ไม่เชื่อมกัน:** หน้าแรก → Firestore (+เตือนความเสี่ยง), หน้า tracking → localStorage (ไม่มีเตือน, ไม่เข้ากราฟประวัติ)
 6. **ผล Pre/Post-test และผลประเมินความเสี่ยงไม่ถูกบันทึก** (PRODUCT.md คาดว่าจะวัดความรู้/สรุปผล)
 7. **Doc id = ชื่อ lowercase** → คนชื่อซ้ำ = ใช้บัญชีเดียวกัน และ `EditProfileModal` ถ้าเปลี่ยนชื่อจะสร้าง doc ใหม่ แทนที่จะแก้ doc เดิม
