@@ -6,20 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
-import { db, currentUid } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore/lite";
+import { saveToMyProfile } from "@/lib/firebase";
+import { SATISFACTION_QUESTIONS as QUESTIONS } from "@/lib/questions";
 import { useUserStore } from "@/lib/userStore";
 
-const QUESTIONS = [
-  { id: 1, text: "แอปพลิเคชันมีขั้นตอนการใช้งานที่เข้าใจง่าย" },
-  { id: 2, text: "สามารถใช้งานแอปพลิเคชันได้สะดวกและไม่ซับซ้อน" },
-  { id: 3, text: "รูปแบบและการจัดวางเมนูต่าง ๆ มีความเหมาะสม" },
-  { id: 4, text: "เนื้อหาเกี่ยวกับอาการ สาเหตุ การปฏิบัติตัว ผลกระทบทั้งมารดาและทารกของภาวะความดันโลหิตสูงขณะตั้งครรภ์เข้าใจง่าย" },
-  { id: 5, text: "การมีทั้งคลิปวิดีโอและ E-book ช่วยให้สามารถเรียนรู้เนื้อหาได้ตามความสะดวก" },
-  { id: 6, text: "แอปพลิเคชันช่วยให้ท่านมีความรู้และความเข้าใจเกี่ยวกับภาวะความดันโลหิตสูงขณะตั้งครรภ์มากขึ้น" },
-  { id: 7, text: "แอปพลิเคชันช่วยให้ท่านตระหนักถึงการดูแลสุขภาพและป้องกันภาวะความดันโลหิตสูงขณะตั้งครรภ์มากขึ้น" },
-  { id: 8, text: "โดยภาพรวม ท่านมีความพึงพอใจต่อการใช้แอปพลิเคชันนี้" },
-];
 
 export default function SatisfactionSurvey() {
   const router = useRouter();
@@ -56,9 +46,7 @@ export default function SatisfactionSurvey() {
         // Last step: Save to Firebase
         if (user?.name) {
           try {
-            const uid = await currentUid();
-            if (!uid) throw new Error("not signed in");
-            await setDoc(doc(db, "users", uid), { satisfaction: newAnswers }, { merge: true });
+            await saveToMyProfile({ satisfaction: newAnswers });
           } catch (err) {
             console.error("Error saving satisfaction survey:", err);
           }
@@ -80,21 +68,21 @@ export default function SatisfactionSurvey() {
 
   if (isFinished) {
     return (
-      <div className="min-h-dvh flex flex-col bg-slate-50 pt-12 pb-8 px-6">
+      <div className="h-dvh overflow-hidden flex flex-col bg-slate-50 pt-12 short:pt-6 pb-8 short:pb-4 px-6 md:max-w-2xl md:mx-auto md:w-full md:shadow-sm">
         <FloatingParticles count={20} />
-        <h1 className="text-2xl font-bold text-slate-800 text-center mb-8">ขอบคุณสำหรับคำประเมิน</h1>
+        <h1 className="text-2xl font-bold text-slate-800 text-center mb-8 short:mb-4">ขอบคุณสำหรับคำประเมิน</h1>
         
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="rounded-3xl p-8 flex flex-col items-center text-center shadow-sm bg-amber-50"
+          className="rounded-3xl p-8 short:p-5 flex flex-col items-center text-center shadow-sm bg-amber-50"
         >
           <CheckCircle2 className="w-12 h-12 text-amber-500" />
           <h2 className="text-2xl font-bold mt-4 mb-1 text-amber-600">บันทึกข้อมูลสำเร็จ</h2>
           <p className="text-slate-600/90 font-medium mt-2">ความคิดเห็นของท่านจะเป็นประโยชน์ในการพัฒนาแอปพลิเคชันต่อไป</p>
         </motion.div>
 
-        <div className="mt-auto pt-8">
+        <div className="mt-auto pt-8 short:pt-4">
           <button
             onClick={() => router.push("/#education")}
             className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 active:scale-95 transition-all"
@@ -109,8 +97,8 @@ export default function SatisfactionSurvey() {
   const currentQ = QUESTIONS[currentStep];
 
   return (
-    <div className="min-h-dvh flex flex-col pt-safe pb-8 relative overflow-hidden bg-slate-50">
-      <header className="px-4 py-4 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
+    <div className="h-dvh flex flex-col pt-safe pb-6 short:pb-3 relative overflow-hidden bg-slate-50 md:max-w-2xl md:mx-auto md:w-full md:shadow-sm">
+      <header className="px-4 py-4 short:py-1 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
         <button onClick={handleBack} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors" aria-label="ย้อนกลับ">
           <ChevronLeft className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -129,7 +117,7 @@ export default function SatisfactionSurvey() {
         />
       </div>
 
-      <div className="flex-1 px-6 flex flex-col relative mt-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 flex flex-col relative mt-6 short:mt-3">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -137,14 +125,14 @@ export default function SatisfactionSurvey() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -50, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="flex flex-col h-full"
+            className="flex flex-col"
           >
             <h2 className="text-amber-500 font-semibold mb-2">แบบประเมินความพึงพอใจ</h2>
-            <h3 className="text-xl font-bold text-slate-800 leading-snug text-balance">
+            <h3 className="text-xl short:text-lg phone-landscape:text-base font-bold text-slate-800 leading-snug text-balance">
               {currentQ.text}
             </h3>
 
-            <div className="mt-12 flex flex-col gap-3">
+            <div className="mt-12 short:mt-4 flex flex-col gap-3 short:gap-2 phone-landscape:grid phone-landscape:grid-cols-2">
               {[
                 { score: 5, label: "พึงพอใจมากที่สุด" },
                 { score: 4, label: "พึงพอใจมาก" },
@@ -156,7 +144,7 @@ export default function SatisfactionSurvey() {
                   key={option.score}
                   onClick={() => handleAnswer(option.score)}
                   className={cn(
-                    "w-full py-4 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-amber-50 hover:text-amber-900 active:scale-[0.98] transition-all flex items-center justify-between relative overflow-hidden",
+                    "w-full py-4 short:py-2.5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-amber-50 hover:text-amber-900 active:scale-[0.98] transition-all flex items-center justify-between relative overflow-hidden",
                     answers[currentQ.id] === option.score && "bg-amber-50 text-amber-900"
                   )}
                 >

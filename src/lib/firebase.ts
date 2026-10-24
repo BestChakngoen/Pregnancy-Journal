@@ -1,6 +1,6 @@
 ﻿// src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore/lite";
+import { doc, getFirestore, setDoc } from "firebase/firestore/lite";
 
 // TODO: Replace with your actual Firebase Project Configuration
 // à¸„à¸¸à¸“à¹à¸¡à¹ˆ/à¸„à¸¸à¸“à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸•à¹‰à¸­à¸‡à¸™à¸³à¸„à¹ˆà¸²à¹€à¸«à¸¥à¹ˆà¸²à¸™à¸µà¹‰à¸¡à¸²à¸ˆà¸²à¸ Firebase Console > Project Settings
@@ -28,4 +28,11 @@ export async function currentUid(): Promise<string | null> {
   const { auth } = await import("@/lib/auth");
   await auth.authStateReady();
   return auth.currentUser?.uid ?? null;
+}
+
+// บันทึกผลแบบทดสอบ/แบบประเมินลงเอกสารของผู้ใช้ที่ล็อกอิน (merge ไม่ทับ field อื่น)
+export async function saveToMyProfile(data: Record<string, unknown>) {
+  const uid = await currentUid();
+  if (!uid) throw new Error("not signed in");
+  await setDoc(doc(db, "users", uid), data, { merge: true });
 }

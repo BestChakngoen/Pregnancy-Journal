@@ -25,10 +25,11 @@ const itemVariants: Variants = {
 
 export default function HealthLogSection() {
   const router = useRouter();
-  const { data, updateBloodPressure, updateWeight, addKick, removeKick } = useTrackingStore();
-  
-  const [isBPModalOpen, setIsBPModalOpen] = useState(false);
-  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const { data, kicksToday, saveBloodPressure, saveWeight, addKick, removeKick } = useTrackingStore();
+
+  // "new" = บันทึกครั้งใหม่, "edit" = แก้ค่าล่าสุดที่บันทึกผิด, null = ปิด
+  const [bpMode, setBpMode] = useState<"new" | "edit" | null>(null);
+  const [weightMode, setWeightMode] = useState<"new" | "edit" | null>(null);
 
   // Split BP for display if it has "/"
   const bpParts = data.bloodPressure.split("/");
@@ -37,14 +38,14 @@ export default function HealthLogSection() {
   const hasBP = data.bloodPressure !== "-";
 
   return (
-    <div className="pb-8 pt-8 px-4 flex flex-col relative overflow-hidden">
+    <div className="pb-8 pt-8 px-4 md:px-10 flex flex-col relative overflow-hidden">
       {/* Header */}
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6 px-2"
       >
-        <div className="w-12 h-12 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm flex items-center justify-center mb-3">
+        <div className="w-12 h-12 bg-white/60 rounded-2xl shadow-sm flex items-center justify-center mb-3">
           <Activity className="w-6 h-6 text-blue-500" />
         </div>
         <h1 className="text-3xl font-bold text-slate-800 tracking-tight">บันทึกสุขภาพ</h1>
@@ -56,24 +57,34 @@ export default function HealthLogSection() {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-2 gap-4 flex-1 auto-rows-max"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 auto-rows-max"
       >
         
         {/* Core Tracker: Blood Pressure (Span 2 cols) */}
-        <motion.section variants={itemVariants} className="col-span-2 md:col-span-2 md:row-span-2 h-full">
+        <motion.section variants={itemVariants} className="col-span-2 h-full">
           <div className="flex items-center justify-between mb-2 ml-1">
             <h3 className="font-semibold text-slate-800/90 text-sm">ความดันโลหิต</h3>
-            <button 
-              onClick={() => setIsBPModalOpen(true)}
-              className="min-h-[44px] min-w-[44px] px-4 font-bold text-blue-600 bg-blue-50 rounded-full flex items-center justify-center gap-1 hover:bg-blue-100 transition-colors"
-            >
-              {hasBP ? <><Pencil className="w-4 h-4" /> แก้ไข</> : <><Plus className="w-4 h-4" /> บันทึก</>}
-            </button>
+            <div className="flex items-center gap-2">
+              {hasBP && (
+                <button
+                  onClick={() => setBpMode("edit")}
+                  className="min-h-[44px] min-w-[44px] px-3 font-semibold text-slate-500 rounded-full flex items-center justify-center gap-1 hover:bg-slate-100 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" /> แก้ไข
+                </button>
+              )}
+              <button 
+                onClick={() => setBpMode("new")}
+                className="min-h-[44px] min-w-[44px] px-4 font-bold text-blue-600 bg-blue-50 rounded-full flex items-center justify-center gap-1 hover:bg-blue-100 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> บันทึก
+              </button>
+            </div>
           </div>
           
           <motion.div 
             whileHover={{ y: -2 }}
-            className="w-full flex flex-col p-5 bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-md rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all relative overflow-hidden"
+            className="w-full flex flex-col p-5 bg-gradient-to-br from-white/90 to-blue-50/80 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all relative overflow-hidden"
           >
             {/* Fake Sparkline SVG for Pro Data Viz Look */}
             <svg className="absolute bottom-0 left-0 w-full h-24 opacity-20 pointer-events-none text-blue-500" viewBox="0 0 100 30" preserveAspectRatio="none">
@@ -109,10 +120,10 @@ export default function HealthLogSection() {
         </motion.section>
 
         {/* Secondary Tracker: Weight (Tall Box) */}
-        <motion.button 
-          variants={itemVariants} 
-          onClick={() => setIsWeightModalOpen(true)}
-          className="col-span-1 row-span-2 md:col-span-1 flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden"
+        <motion.div variants={itemVariants} className="col-span-1 row-span-2 md:row-span-1 relative">
+        <button 
+          onClick={() => setWeightMode("new")}
+          className="w-full h-full flex flex-col p-5 bg-white/60 rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden"
         >
           {/* Mini trend line */}
           <svg className="absolute bottom-6 right-0 w-24 h-16 opacity-30 pointer-events-none group-hover:opacity-60 transition-opacity text-amber-600" viewBox="0 0 50 30" preserveAspectRatio="none">
@@ -132,15 +143,25 @@ export default function HealthLogSection() {
             <span className="text-xs text-slate-500/80 font-bold mt-1">กิโลกรัม</span>
           </div>
           <div className="mt-2 text-xs font-medium text-amber-600 bg-amber-50 w-fit px-2 py-0.5 rounded-full">
-            {data.weightLastUpdated !== "-" ? "แตะเพื่อแก้ไข · " + data.weightLastUpdated : "แตะเพื่อบันทึก"}
+            {data.weightLastUpdated !== "-" ? "อัปเดตล่าสุด: " + data.weightLastUpdated : "แตะเพื่อบันทึก"}
           </div>
-        </motion.button>
+        </button>
+        {data.weight > 0 && (
+          <button
+            onClick={() => setWeightMode("edit")}
+            aria-label="แก้ไขน้ำหนักล่าสุด"
+            className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-full bg-white/80 text-amber-600 shadow-sm hover:bg-white active:scale-95 transition-all"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
+        </motion.div>
 
         {/* Secondary Tracker: Kick Counter (Square) */}
         <motion.div variants={itemVariants} className="col-span-1 relative">
         <button
           onClick={addKick}
-          className="w-full h-full flex flex-col p-4 bg-white/60 backdrop-blur-md rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+          className="w-full h-full flex flex-col p-4 bg-white/60 rounded-[2rem] shadow-sm hover:bg-white/80 transition-all active:scale-95 text-left group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
         >
           <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-pink-200/50 rounded-full blur-xl group-hover:scale-150 transition-transform -z-10" />
           <div className="flex items-center justify-between mb-2">
@@ -151,16 +172,16 @@ export default function HealthLogSection() {
               แตะเพื่อนับ
             </div>
           </div>
-          <h4 className="font-semibold text-slate-700/90 text-sm">ลูกดิ้น</h4>
+          <h4 className="font-semibold text-slate-700/90 text-sm">ลูกดิ้นวันนี้</h4>
           <div className="flex items-baseline gap-1 mt-auto pt-2">
-            <span className="text-2xl font-extrabold text-pink-600 tabular-nums">{data.kicks}</span>
+            <span className="text-2xl font-extrabold text-pink-600 tabular-nums">{kicksToday}</span>
             <span className="text-xs text-pink-500/70 font-bold">ครั้ง</span>
           </div>
         </button>
         {/* กดผิด: ลดทีละ 1 (ปุ่มแยก ไม่ซ้อนใน button นับ) */}
         <button
           onClick={removeKick}
-          disabled={data.kicks === 0}
+          disabled={kicksToday === 0}
           aria-label="ลดลูกดิ้น 1 ครั้ง"
           className="absolute bottom-2 right-2 w-11 h-11 flex items-center justify-center rounded-full bg-white/80 text-pink-600 shadow-sm hover:bg-white active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
         >
@@ -172,7 +193,7 @@ export default function HealthLogSection() {
         <motion.section variants={itemVariants} className="col-span-2 md:col-span-4 mt-2 md:mt-6">
           <button 
             onClick={() => router.push('/assessment')}
-            className="w-full flex items-center justify-between p-5 bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.15)] active:scale-95 transition-all group overflow-hidden relative"
+            className="w-full flex items-center justify-between p-5 bg-white/80 rounded-[2rem] shadow-[0_8px_30px_rgb(244,114,182,0.15)] active:scale-95 transition-all group overflow-hidden relative"
           >
             <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-pink-100/30 to-transparent -skew-x-12 animate-shimmer" />
             
@@ -189,16 +210,16 @@ export default function HealthLogSection() {
       </motion.main>
 
       <BloodPressureModal 
-        isOpen={isBPModalOpen} 
-        onClose={() => setIsBPModalOpen(false)} 
-        onSave={(bp) => updateBloodPressure(bp)}
-        initial={hasBP ? data.bloodPressure : ""}
+        isOpen={bpMode !== null} 
+        onClose={() => setBpMode(null)} 
+        onSave={(bp) => saveBloodPressure(bp, bpMode === "edit")}
+        initial={bpMode === "edit" ? data.bloodPressure : ""}
       />
       <WeightModal 
-        isOpen={isWeightModalOpen} 
-        onClose={() => setIsWeightModalOpen(false)} 
-        onSave={(w) => updateWeight(w)}
-        initial={data.weight}
+        isOpen={weightMode !== null} 
+        onClose={() => setWeightMode(null)} 
+        onSave={(w) => saveWeight(w, weightMode === "edit")}
+        initial={weightMode === "edit" ? data.weight : 0}
       />
     </div>
   );

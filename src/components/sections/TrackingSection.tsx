@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Activity, AlertTriangle, TrendingUp, Scale, Baby } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useUserStore } from "@/lib/userStore";
-import { db, currentUid } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs, limit } from "firebase/firestore/lite";
+import { dayKey, fetchRecent, HEALTH_LOGGED } from "@/lib/healthLogs";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
 
@@ -23,6 +22,18 @@ interface BPLog {
   displayDate?: string;
 }
 
+interface WeightLog {
+  kg: number;
+  timestamp: string;
+}
+
+interface KickDay {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+const shortDate = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
+
 type TabType = "bp" | "weight" | "kicks";
 
 const TABS = [
@@ -35,49 +46,34 @@ export default function TrackingSection() {
   const { user } = useUserStore();
   const [activeTab, setActiveTab] = useState<TabType>("bp");
   
-  // BP State
   const [logs, setLogs] = useState<BPLog[]>([]);
+  const [weights, setWeights] = useState<WeightLog[]>([]);
+  const [kicks, setKicks] = useState<KickDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // โหลดเฉพาะแท็บที่เปิด และโหลดใหม่เมื่อมีการบันทึกจากหน้าหลัก (อยู่หน้าเดียวกัน)
   useEffect(() => {
-    if (!user?.name || activeTab !== "bp") return;
-    fetchLogs();
-    window.addEventListener("bp-logged", fetchLogs);
-    return () => window.removeEventListener("bp-logged", fetchLogs);
-  }, [user, activeTab]);
-
-  const fetchLogs = async () => {
-    setIsLoading(true);
-    try {
-      const uid = await currentUid();
-      if (!uid) throw new Error("not signed in");
-      const logsRef = collection(db, "users", uid, "bloodPressures");
-      const q = query(logsRef, orderBy("timestamp", "asc"), limit(30));
-      const snapshot = await getDocs(q);
-      
-      const fetchedLogs: BPLog[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const date = new Date(data.timestamp);
-        fetchedLogs.push({
-          ...data,
-          systolic: data.systolic,
-          diastolic: data.diastolic,
-          isHighRisk: data.isHighRisk,
-          displayDate: `${date.getDate()}/${date.getMonth() + 1}`,
-        } as BPLog);
-      });
-
-      setLogs(fetchedLogs);
-    } catch (err) {
-      setLogs([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    if (!user?.name) return;
+    const load = () => {
+      const task =
+        activeTab === "bp"
+          ? fetchRecent<BPLog>("bloodPressures", "timestamp", 30)
+              .then((xs) => setLogs(xs.map((l) => ({ ...l, displayDate: shortDate(new Date(l.timestamp)) }))))
+              .catch(() => setLogs([]))
+          : activeTab === "weight"
+            ? fetchRecent<WeightLog>("weights", "timestamp", 30).then(setWeights).catch(() => setWeights([]))
+            : fetchRecent<KickDay>("kicks", "date", 14).then(setKicks).catch(() => setKicks([]));
+      task.finally(() => setIsLoading(false));
+    };
+    load();
+    window.addEventListener(HEALTH_LOGGED, load);
+    return () => window.removeEventListener(HEALTH_LOGGED, load);
+  }, [user?.name, activeTab]);
 
   const latestBP = logs[logs.length - 1];
   const isBPDanger = latestBP?.isHighRisk;
+  const latestWeight = weights[weights.length - 1];
+  const kicksToday = kicks.find((k) => k.date === dayKey());
 
       const renderBP = () => (
     <>
@@ -102,10 +98,10 @@ export default function TrackingSection() {
         </div>
       )}
 
-      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+      <div className="bg-white/70 rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
         <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-pink-500" />
-          แนวโน้มย้อนหลัง 7 วัน
+          แนวโน้ม 30 ครั้งล่าสุด
         </h3>
         
         {isLoading ? (
@@ -128,7 +124,7 @@ export default function TrackingSection() {
         </div>
       </div>
       
-      <div className="bg-orange-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+      <div className="bg-orange-50/80 rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
         <p className="text-xs text-orange-800/90 leading-relaxed font-semibold">
           * ค่าความดันปกติควรต่ำกว่า 120/80 mmHg <br/>
           * หากค่าตัวใดตัวหนึ่งสูงกว่า <span className="font-bold text-red-600 bg-red-100/50 px-1 py-0.5 rounded-md">140/90 mmHg</span> ถือว่ามีความเสี่ยงครรภ์เป็นพิษ
@@ -143,27 +139,27 @@ export default function TrackingSection() {
         <div className="relative z-10 flex flex-col">
           <span className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-2">
             <Scale className="w-4 h-4 text-emerald-500" />
-            น้ำหนักล่าสุด
+            น้ำหนักล่าสุด{latestWeight && ` (${shortDate(new Date(latestWeight.timestamp))})`}
           </span>
           <div className="flex items-end gap-1.5">
-            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">-</span>
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">{latestWeight ? latestWeight.kg : "-"}</span>
             <span className="text-sm font-semibold text-slate-500 mb-1.5">กก.</span>
           </div>
-          <p className="text-xs font-medium text-emerald-600 mt-1">ยังไม่มีข้อมูล</p>
+          {!latestWeight && <p className="text-xs font-medium text-emerald-600 mt-1">ยังไม่มีข้อมูล</p>}
         </div>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+      <div className="bg-white/70 rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
         <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-emerald-500" />
-          แนวโน้มน้ำหนัก
+          แนวโน้มน้ำหนัก 30 ครั้งล่าสุด
         </h3>
         <div className="h-[220px] w-full -ml-4">
-          <WeightChart />
+          <WeightChart data={weights.map((w) => ({ date: shortDate(new Date(w.timestamp)), kg: w.kg }))} />
         </div>
       </div>
 
-      <div className="bg-emerald-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+      <div className="bg-emerald-50/80 rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
         <p className="text-xs text-emerald-800/90 leading-relaxed font-semibold">
           * น้ำหนักควรขึ้นประมาณ 1-2 กิโลกรัมต่อเดือนในไตรมาสที่ 2 และ 3
         </p>
@@ -180,24 +176,24 @@ export default function TrackingSection() {
             ลูกดิ้นวันนี้
           </span>
           <div className="flex items-end gap-1.5">
-            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">-</span>
+            <span className="text-4xl font-bold tracking-tight tabular-nums text-slate-800">{kicksToday ? kicksToday.count : 0}</span>
             <span className="text-sm font-semibold text-slate-500 mb-1.5">ครั้ง</span>
           </div>
-          <p className="text-xs font-medium text-purple-600 mt-1">ยังไม่มีข้อมูล</p>
+          {kicks.length === 0 && <p className="text-xs font-medium text-purple-600 mt-1">ยังไม่มีข้อมูล</p>}
         </div>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
+      <div className="bg-white/70 rounded-[2rem] border border-white/60 p-6 shadow-sm shrink-0">
         <h3 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-purple-500" />
-          สถิติการดิ้นย้อนหลัง
+          สถิติการดิ้น 14 วันล่าสุด
         </h3>
         <div className="h-[220px] w-full -ml-4">
-          <KicksChart />
+          <KicksChart data={kicks.map((k) => ({ date: shortDate(new Date(`${k.date}T00:00:00`)), count: k.count }))} />
         </div>
       </div>
 
-      <div className="bg-orange-50/80 backdrop-blur-sm rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
+      <div className="bg-orange-50/80 rounded-[1.5rem] p-5 border border-white/60 shadow-sm shrink-0">
         <p className="text-xs text-orange-800/90 leading-relaxed font-semibold">
           * ลูกควรดิ้นไม่ต่ำกว่า <span className="font-bold text-red-600">10 ครั้ง</span> ใน 2 ชั่วโมงหลังอาหาร
         </p>

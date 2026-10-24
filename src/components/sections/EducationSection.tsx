@@ -26,7 +26,7 @@ export default function EducationSection() {
           </div>
           <button 
             onClick={() => router.push("/pre-test")}
-            className="w-full flex items-center justify-between p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]"
+            className="w-full flex items-center justify-between p-4 bg-white/60 rounded-2xl shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]"
           >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-100/80 rounded-2xl">
@@ -67,7 +67,7 @@ export default function EducationSection() {
                   router.push("/education/ebook");
                 }, 300);
               }}
-              className="relative overflow-hidden flex flex-col flex-1 p-6 bg-gradient-to-br from-pink-100/80 to-blue-50/80 backdrop-blur-md rounded-3xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] group text-left w-full"
+              className="relative overflow-hidden flex flex-col flex-1 p-6 bg-gradient-to-br from-pink-100/80 to-blue-50/80 rounded-3xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] group text-left w-full"
               whileHover={{ y: -2 }}
             >
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-pink-200/50 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
@@ -87,7 +87,7 @@ export default function EducationSection() {
             {/* Video Series */}
             <button 
               onClick={() => router.push("/videos")}
-              className="w-full flex items-center justify-between p-4 bg-white/60 backdrop-blur-md rounded-2xl shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]"
+              className="w-full flex items-center justify-between p-4 bg-white/60 rounded-2xl shadow-sm hover:bg-white/80 transition-all active:scale-[0.98]"
             >
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-purple-100/80 rounded-2xl">

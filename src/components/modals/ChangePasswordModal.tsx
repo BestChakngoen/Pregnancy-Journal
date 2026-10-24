@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Portal from "@/components/ui/Portal";
 import { X, Check, KeyRound, Loader2 } from "lucide-react";
 import { useAlertStore } from "@/lib/alertStore";
 
@@ -85,6 +86,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
   const labelClasses = "block text-sm font-semibold text-slate-600 mb-2 ml-1 flex items-center gap-2";
 
   return (
+    <Portal>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -92,7 +94,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50"
             onClick={handleClose}
           />
 
@@ -101,7 +103,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl z-50 flex flex-col max-h-[90vh] border-t border-white/60"
+            className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto md:bottom-1/2 md:translate-y-1/2 md:rounded-[2rem] bg-white/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl z-50 flex flex-col max-h-[90vh] border-t border-white/60"
           >
             <div className="w-full flex justify-center pt-3 pb-2" onClick={handleClose}>
               <div className="w-12 h-1.5 bg-slate-300/50 rounded-full" />
@@ -186,5 +188,6 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
         </>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

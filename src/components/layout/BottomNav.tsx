@@ -40,7 +40,7 @@ export default function BottomNav() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 md:top-0 md:bottom-auto w-full max-w-md md:max-w-[256px] md:h-dvh z-40 bg-white/95 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-[4px_0_24px_rgba(0,0,0,0.05)] border-t md:border-t-0 md:border-r border-slate-100/80 pb-safe md:pb-0 phone-landscape:hidden">
+      <div data-sidebar className="fixed bottom-0 left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 md:top-0 md:bottom-auto w-full max-w-md md:max-w-[256px] md:h-dvh z-40 bg-white/95 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-[4px_0_24px_rgba(0,0,0,0.05)] border-t md:border-t-0 md:border-r border-slate-100/80 pb-safe md:pb-0 phone-landscape:hidden">
       <nav className="flex md:flex-col md:overflow-y-auto justify-between md:justify-start items-center md:items-stretch px-6 py-2 md:p-6 pointer-events-auto md:h-full md:gap-2">
         {/* Desktop Logo Area */}
         <div className="hidden md:flex flex-col items-center justify-center py-6 mb-4">
@@ -84,7 +84,7 @@ export default function BottomNav() {
       <button
         onClick={() => setMenuOpen(true)}
         aria-label="เปิดเมนู"
-        className="hidden phone-landscape:flex fixed top-2 left-2 z-40 w-11 h-11 items-center justify-center rounded-full bg-white/90 backdrop-blur-md shadow-md text-slate-600 active:scale-95 transition-transform"
+        className="hidden phone-landscape:flex fixed top-2 left-2 z-40 w-11 h-11 items-center justify-center rounded-full bg-white/90 shadow-md text-slate-600 active:scale-95 transition-transform"
       >
         <Menu className="w-5 h-5" aria-hidden="true" />
       </button>

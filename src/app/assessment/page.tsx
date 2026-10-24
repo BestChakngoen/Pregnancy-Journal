@@ -7,40 +7,9 @@ import { ChevronLeft, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-rea
 import { cn } from "@/lib/utils";
 
 import FloatingParticles from "@/components/ui/FloatingParticles";
+import { ASSESSMENT_QUESTIONS as QUESTIONS, riskLevelOf } from "@/lib/questions";
+import { saveToMyProfile } from "@/lib/firebase";
 
-// Mock Questions for demonstration
-const QUESTIONS = [
-  {
-    id: 1,
-    title: "อายุของคุณแม่",
-    text: "ปัจจุบันคุณแม่อายุน้อยกว่า 18 ปี หรือ มากกว่า 35 ปี ใช่หรือไม่?",
-    riskScore: 2,
-  },
-  {
-    id: 2,
-    title: "โรคประจำตัว",
-    text: "คุณแม่มีโรคประจำตัว เช่น เบาหวาน ความดันโลหิตสูง โรคหัวใจ หรือไทรอยด์ หรือไม่?",
-    riskScore: 3,
-  },
-  {
-    id: 3,
-    title: "ประวัติการตั้งครรภ์",
-    text: "เคยมีประวัติแท้งบุตร คลอดก่อนกำหนด หรือครรภ์เป็นพิษในอดีตหรือไม่?",
-    riskScore: 3,
-  },
-  {
-    id: 4,
-    title: "ครรภ์แฝด",
-    text: "ปัจจุบันแพทย์วินิจฉัยว่าตั้งครรภ์แฝด ใช่หรือไม่?",
-    riskScore: 2,
-  },
-  {
-    id: 5,
-    title: "อาการแทรกซ้อน",
-    text: "มีอาการเลือดออกทางช่องคลอดในขณะตั้งครรภ์ปัจจุบันหรือไม่?",
-    riskScore: 4,
-  },
-];
 
 export default function Assessment() {
   const router = useRouter();
@@ -60,7 +29,8 @@ export default function Assessment() {
   const progressPercent = ((currentStep) / totalSteps) * 100;
 
   const handleAnswer = (val: boolean) => {
-    setAnswers((prev) => ({ ...prev, [QUESTIONS[currentStep].id]: val }));
+    const nextAnswers = { ...answers, [QUESTIONS[currentStep].id]: val };
+    setAnswers(nextAnswers);
     setIsAdvancing(true);
     
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -71,6 +41,11 @@ export default function Assessment() {
       if (currentStep < totalSteps - 1) {
         setCurrentStep(prev => prev + 1);
       } else {
+        const factors = QUESTIONS.filter((q) => nextAnswers[q.id]).map((q) => q.id);
+        const totalRisk = QUESTIONS.reduce((sum, q) => sum + (nextAnswers[q.id] ? q.riskScore : 0), 0);
+        // ส่งให้หน้า admin วิเคราะห์ (เก็บผลล่าสุด) — บันทึกไม่ได้ก็ยังแสดงผลให้ผู้ใช้ตามปกติ
+        saveToMyProfile({ assessment: { totalRisk, level: riskLevelOf(totalRisk), factors, at: new Date().toISOString() } })
+          .catch((err) => console.error("Error saving assessment:", err));
         setIsFinished(true);
       }
     }, 150);
@@ -102,12 +77,13 @@ export default function Assessment() {
     let bg = "bg-emerald-50";
     let icon = <CheckCircle2 className="w-12 h-12 text-emerald-500" />;
 
-    if (totalRisk >= 5) {
+    const risk = riskLevelOf(totalRisk);
+    if (risk === "high") {
       level = "ความเสี่ยงสูง (ควรพบแพทย์)";
       color = "text-red-500";
       bg = "bg-red-50";
       icon = <AlertTriangle className="w-12 h-12 text-red-500" />;
-    } else if (totalRisk >= 2) {
+    } else if (risk === "medium") {
       level = "ความเสี่ยงปานกลาง";
       color = "text-amber-500";
       bg = "bg-amber-50";
@@ -120,14 +96,14 @@ export default function Assessment() {
   if (isFinished) {
     const result = calculateRisk();
     return (
-      <div className="min-h-dvh flex flex-col bg-slate-50 pt-12 pb-8 px-6">
+      <div className="h-dvh overflow-hidden flex flex-col bg-slate-50 pt-12 short:pt-6 pb-8 short:pb-4 px-6 md:max-w-2xl md:mx-auto md:w-full md:shadow-sm">
         {result.totalRisk < 2 && <FloatingParticles count={20} />}
-        <h1 className="text-2xl font-bold text-slate-800 text-center mb-8">สรุปผลการประเมิน</h1>
+        <h1 className="text-2xl font-bold text-slate-800 text-center mb-8 short:mb-4">สรุปผลการประเมิน</h1>
         
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className={cn("rounded-3xl p-8 flex flex-col items-center text-center shadow-sm ", result.bg)}
+          className={cn("rounded-3xl p-8 short:p-5 flex flex-col items-center text-center shadow-sm ", result.bg)}
         >
           {result.icon}
           <h2 className={cn("text-2xl font-bold mt-4 mb-1", result.color)}>{result.level}</h2>
@@ -135,7 +111,7 @@ export default function Assessment() {
         </motion.div>
 
         {result.riskDetails.length > 0 && (
-          <div className="mt-8">
+          <div className="mt-8 short:mt-4 min-h-0 overflow-y-auto">
             <h3 className="font-semibold text-slate-800/90 mb-3 ml-1">ปัจจัยเสี่ยงที่พบ:</h3>
             <ul className="flex flex-col gap-2">
               {result.riskDetails.map((detail, idx) => (
@@ -148,7 +124,7 @@ export default function Assessment() {
           </div>
         )}
 
-        <div className="mt-auto pt-8">
+        <div className="mt-auto pt-8 short:pt-4">
           <button
             onClick={() => router.push("/")}
             className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 active:scale-95 transition-all"
@@ -163,9 +139,9 @@ export default function Assessment() {
   const currentQ = QUESTIONS[currentStep];
 
   return (
-    <div className="min-h-dvh flex flex-col pt-safe pb-8 relative overflow-hidden bg-slate-50">
+    <div className="h-dvh flex flex-col pt-safe pb-6 short:pb-3 relative overflow-hidden bg-slate-50 md:max-w-2xl md:mx-auto md:w-full md:shadow-sm">
       {/* Header & Progress */}
-      <header className="px-4 py-4 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
+      <header className="px-4 py-4 short:py-1 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
         <button onClick={handleBack} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors" aria-label="ย้อนกลับ">
           <ChevronLeft className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -186,7 +162,7 @@ export default function Assessment() {
       </div>
 
       {/* Question Content */}
-      <div className="flex-1 px-6 flex flex-col relative mt-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 flex flex-col relative mt-6 short:mt-3">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -194,18 +170,18 @@ export default function Assessment() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -50, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="flex flex-col h-full"
+            className="flex flex-col"
           >
             <h2 className="text-pink-500 font-semibold mb-2">{currentQ.title}</h2>
-            <h3 className="text-2xl font-bold text-slate-800 leading-snug text-balance">
+            <h3 className="text-2xl short:text-xl phone-landscape:text-lg font-bold text-slate-800 leading-snug text-balance">
               {currentQ.text}
             </h3>
 
-            <div className="mt-12 flex flex-col gap-4">
+            <div className="mt-12 short:mt-5 flex flex-col gap-4 short:gap-3 phone-landscape:grid phone-landscape:grid-cols-2">
               <button
                 onClick={() => handleAnswer(true)}
                 className={cn(
-                  "w-full py-5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-pink-50 hover:text-pink-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
+                  "w-full py-5 short:py-3.5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-pink-50 hover:text-pink-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
                   answers[currentQ.id] === true && "bg-pink-50 text-pink-900"
                 )}
               >
@@ -225,7 +201,7 @@ export default function Assessment() {
               <button
                 onClick={() => handleAnswer(false)}
                 className={cn(
-                  "w-full py-5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-blue-50 hover:text-blue-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
+                  "w-full py-5 short:py-3.5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-blue-50 hover:text-blue-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
                   answers[currentQ.id] === false && "bg-blue-50 text-blue-900"
                 )}
               >

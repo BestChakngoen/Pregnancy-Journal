@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Portal from "@/components/ui/Portal";
 import { X, Check, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
 import { useUserStore } from "@/lib/userStore";
-import { db, currentUid } from "@/lib/firebase";
-import { doc, collection, addDoc } from "firebase/firestore/lite";
+import { isHighBP, saveBloodPressure } from "@/lib/healthLogs";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface BloodPressureLoggerProps {
@@ -24,7 +24,7 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
 
   const sys = parseInt(systolic);
   const dia = parseInt(diastolic);
-  const isHighRisk = (sys >= 140 || dia >= 90);
+  const isHighRisk = isHighBP(sys, dia);
 
   const handleSave = async () => {
     if (!systolic || !diastolic) {
@@ -59,18 +59,7 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
     };
 
     try {
-      const uid = user?.name ? await currentUid() : null;
-      if (uid) {
-        // Attempt to save to Firebase subcollection
-        const logsRef = collection(doc(db, "users", uid), "bloodPressures");
-        await addDoc(logsRef, {
-          systolic: sys,
-          diastolic: dia,
-          timestamp: new Date().toISOString(),
-          isHighRisk
-        });
-        window.dispatchEvent(new Event("bp-logged")); // ให้กราฟประวัติสุขภาพโหลดใหม่
-      }
+      if (user?.name) await saveBloodPressure(sys, dia, new Date().toISOString());
       
       // Visualize success
       setTimeout(showSuccessToast, 1000);
@@ -83,6 +72,7 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
   };
 
   return (
+    <Portal>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -90,7 +80,7 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50"
             onClick={onClose}
           />
 
@@ -99,7 +89,7 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl z-50 flex flex-col max-h-[90vh] border-t border-white/60"
+            className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto md:bottom-1/2 md:translate-y-1/2 md:rounded-[2rem] bg-white/95 backdrop-blur-xl rounded-t-[2rem] shadow-2xl z-50 flex flex-col max-h-[90vh] border-t border-white/60"
           >
             <div className="w-full flex justify-center pt-3 pb-2" onClick={onClose}>
               <div className="w-12 h-1.5 bg-slate-300/50 rounded-full" />
@@ -196,5 +186,6 @@ export default function BloodPressureLogger({ isOpen, onClose }: BloodPressureLo
         </>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }

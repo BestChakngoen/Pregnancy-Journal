@@ -2,23 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, getDoc, getDocs, query, orderBy } from "firebase/firestore/lite";
+import { collection, collectionGroup, doc, getDoc, getDocs, query, orderBy } from "firebase/firestore/lite";
 import { db } from "@/lib/firebase";
 import { auth, nameToEmail } from "@/lib/auth";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { Loader2, ChevronLeft, Download, ShieldCheck, UserCheck, Activity } from "lucide-react";
+import { Loader2, ChevronLeft, Download, ShieldCheck } from "lucide-react";
 import { useAlertStore } from "@/lib/alertStore";
 import AdminManager from "@/components/admin/AdminManager";
-
-interface UserDoc {
-  id: string;
-  name: string;
-  age: string;
-  gestationalWeeks: string;
-  gravida: string;
-  createdAt: string;
-  satisfaction?: Record<number, number>;
-}
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
+import PatientList from "@/components/admin/PatientList";
+import { buildAnalytics, type HealthData, type PatientDoc } from "@/lib/analytics";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -27,7 +20,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [myUid, setMyUid] = useState("");
   const [deniedUid, setDeniedUid] = useState(""); // ล็อกอินได้แต่ยังไม่มีสิทธิ์: แสดง UID ให้เจ้าของโปรเจกต์นำไปเพิ่ม
-  const [users, setUsers] = useState<UserDoc[]>([]);
+  const [data, setData] = useState<HealthData>({ patients: [], bp: [], weights: [], kicks: [] });
   const [isLoading, setIsLoading] = useState(false);
 
   // สิทธิ์จริงอยู่ที่ Security Rules (มีเอกสาร admins/{uid} หรือไม่) หน้านี้แค่เช็คก่อนเพื่อแสดงข้อความ
@@ -60,16 +53,23 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      const fetchedUsers: UserDoc[] = [];
-      snapshot.forEach((doc) => {
-        fetchedUsers.push({ id: doc.id, ...doc.data() } as UserDoc);
-      });
-      setUsers(fetchedUsers);
+      // shortcut: ดึงบันทึกสุขภาพของทุกคนทีเดียว — ถ้าข้อมูลถึงหลายพันรายการ ให้กรองช่วงวันที่ใน query (ต้องสร้าง collection-group index)
+      const [snapshot, ...groups] = await Promise.all([
+        getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"))),
+        getDocs(collectionGroup(db, "bloodPressures")),
+        getDocs(collectionGroup(db, "weights")),
+        getDocs(collectionGroup(db, "kicks")),
+      ]);
+      const patients = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as PatientDoc);
+      const ids = new Set(patients.map((u) => u.id));
+      // uid เจ้าของ = เอกสาร users/{uid} ที่ครอบอยู่; เก็บเฉพาะผู้ป่วยในรายชื่อ (ไม่นับข้อมูลเก่าที่ค้าง)
+      const [bp, weights, kicks] = groups.map((g) =>
+        g.docs.map((d) => ({ uid: d.ref.parent.parent?.id ?? "", ...d.data() })).filter((x) => ids.has(x.uid))
+      );
+      setData({ patients, bp, weights, kicks } as HealthData);
     } catch (err) {
       console.error("Error fetching users:", err);
-      setUsers([]);
+      setData({ patients: [], bp: [], weights: [], kicks: [] });
       useAlertStore.getState().showAlert({
         type: "error",
         title: "โหลดข้อมูลไม่สำเร็จ",
@@ -82,7 +82,7 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-slate-50 relative z-50">
+      <div className="min-h-svh flex flex-col items-center justify-center p-6 bg-slate-50 relative z-50">
         <div className="w-full max-w-sm bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center">
           <ShieldCheck className="w-16 h-16 text-slate-800 mb-4" />
           <h1 className="text-2xl font-bold text-slate-800 mb-2">เจ้าหน้าที่เท่านั้น</h1>
@@ -144,7 +144,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-slate-50 relative z-50">
+    <div className="min-h-svh flex flex-col bg-slate-50 relative z-50">
       <header className="px-4 py-4 flex items-center justify-between bg-white shadow-sm sticky top-0 z-10 print:hidden">
         <button onClick={() => router.push("/")} className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
           <ChevronLeft className="w-6 h-6" />
@@ -161,46 +161,18 @@ export default function AdminPage() {
       <main className="p-4 flex flex-col gap-4">
         <AdminManager myUid={myUid} />
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-            <UserCheck className="w-6 h-6 text-blue-500 mb-2" />
-            <span className="text-2xl font-bold text-slate-800">{users.length}</span>
-            <span className="text-xs text-slate-500">ผู้ป่วยทั้งหมด</span>
-          </div>
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-            <Activity className="w-6 h-6 text-pink-500 mb-2" />
-            <span className="text-2xl font-bold text-slate-800">0</span>
-            <span className="text-xs text-slate-500">ความเสี่ยงสูง</span>
-          </div>
-        </div>
-
-        <h2 className="text-sm font-semibold text-slate-600 mt-2 ml-1">รายชื่อผู้ป่วยล่าสุด</h2>
-        
         {isLoading ? (
           <div className="py-12 flex justify-center">
             <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {users.map(u => (
-              <div key={u.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-lg">แม่{u.name}</h3>
-                    <p className="text-xs text-slate-500">อายุ {u.age} ปี • ครรภ์ที่ {u.gravida}</p>
-                  </div>
-                  <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs font-bold rounded-lg">
-                    {u.gestationalWeeks} Wk
-                  </span>
-                </div>
-              </div>
-            ))}
-            
-            {users.length === 0 && (
-              <p className="text-center text-slate-500 py-8 text-sm">ยังไม่มีข้อมูลผู้ป่วย</p>
-            )}
-          </div>
+          <>
+            <h2 className="text-sm font-semibold text-slate-600 mt-2 ml-1">ภาพรวมผู้ป่วย</h2>
+            <AdminAnalytics a={buildAnalytics(data)} />
+
+            <h2 className="text-sm font-semibold text-slate-600 mt-2 ml-1">รายชื่อผู้ป่วยล่าสุด</h2>
+            <PatientList data={data} />
+          </>
         )}
       </main>
     </div>

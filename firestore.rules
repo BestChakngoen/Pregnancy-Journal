@@ -13,15 +13,35 @@ service cloud.firestore {
       return !(key in d) || (d[key] is string && d[key].size() <= max);
     }
 
+    // ผลแบบทดสอบก่อน/หลังเรียน { score, total, at }
+    function validScore(s) {
+      return s is map && s.keys().hasOnly(['score', 'total', 'at'])
+        && s.total is int && s.total > 0 && s.total <= 100
+        && s.score is int && s.score >= 0 && s.score <= s.total
+        && s.at is string && s.at.size() <= 40;
+    }
+
+    // ผลประเมินความเสี่ยง { totalRisk, level, factors: [id ข้อที่ตอบใช่], at }
+    function validAssessment(a) {
+      return a is map && a.keys().hasOnly(['totalRisk', 'level', 'factors', 'at'])
+        && a.totalRisk is int && a.totalRisk >= 0 && a.totalRisk <= 100
+        && a.level in ['low', 'medium', 'high']
+        && a.factors is list && a.factors.size() <= 20
+        && a.at is string && a.at.size() <= 40;
+    }
+
     function validProfile(d) {
-      return d.keys().hasOnly(['name', 'age', 'gestationalWeeks', 'gravida', 'expectedDeliveryDate', 'createdAt', 'satisfaction'])
+      return d.keys().hasOnly(['name', 'age', 'gestationalWeeks', 'gravida', 'expectedDeliveryDate', 'createdAt', 'satisfaction', 'preTest', 'postTest', 'assessment'])
         && optString(d, 'name', 100)
         && optString(d, 'age', 10)
         && optString(d, 'gestationalWeeks', 10)
         && optString(d, 'gravida', 10)
         && optString(d, 'expectedDeliveryDate', 30)
         && optString(d, 'createdAt', 40)
-        && (!('satisfaction' in d) || (d.satisfaction is map && d.satisfaction.size() <= 50));
+        && (!('satisfaction' in d) || (d.satisfaction is map && d.satisfaction.size() <= 50))
+        && (!('preTest' in d) || validScore(d.preTest))
+        && (!('postTest' in d) || validScore(d.postTest))
+        && (!('assessment' in d) || validAssessment(d.assessment));
     }
 
     function validBP(d) {
@@ -29,11 +49,26 @@ service cloud.firestore {
         && d.systolic is int && d.systolic >= 40 && d.systolic <= 300
         && d.diastolic is int && d.diastolic >= 20 && d.diastolic <= 200
         && d.timestamp is string && d.timestamp.size() <= 40
-        && d.isHighRisk is bool;
+        // ต้องตรงกับเกณฑ์ใน isHighBP (src/lib/healthLogs.ts) — กันซ่อนค่าความดันสูงจากหน้า admin
+        && d.isHighRisk == (d.systolic >= 140 || d.diastolic >= 90);
     }
 
     // admin เพิ่ม/ลบ admin คนอื่นจากหน้า /admin ได้ แต่ลบตัวเองไม่ได้ จึงเหลือ admin อย่างน้อย 1 คนเสมอ
     // admin คนแรกเพิ่มจาก Firebase Console
+    function validWeight(d) {
+      return d.keys().hasOnly(['kg', 'timestamp'])
+        && d.kg is number && d.kg >= 20 && d.kg <= 250
+        && d.timestamp is string && d.timestamp.size() <= 40;
+    }
+
+    // ลูกดิ้นรายวัน: id เอกสาร = วันที่ (YYYY-MM-DD), count เพิ่ม/ลดด้วย increment
+    function validKicks(d, dayId) {
+      return d.keys().hasOnly(['count', 'date', 'updatedAt'])
+        && d.count is int && d.count >= 0 && d.count <= 1000
+        && d.date == dayId && dayId.size() == 10
+        && d.updatedAt is string && d.updatedAt.size() <= 40;
+    }
+
     match /admins/{userId} {
       allow get: if isOwner(userId) || isAdmin(); // ให้หน้า /admin เช็คสิทธิ์ของตัวเองได้
       allow list: if isAdmin();
@@ -48,6 +83,17 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // หน้า admin ดึงบันทึกสุขภาพของทุกคนทีเดียว (collection group query)
+    match /{path=**}/bloodPressures/{logId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/weights/{logId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/kicks/{dayId} {
+      allow read: if isAdmin();
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create, update: if isOwner(userId) && validProfile(request.resource.data);
@@ -55,8 +101,21 @@ service cloud.firestore {
 
       match /bloodPressures/{logId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) && validBP(request.resource.data);
-        allow update, delete: if false;
+        // update = แก้ค่าที่บันทึกผิดของตัวเอง, ลบไม่ได้
+        allow create, update: if isOwner(userId) && validBP(request.resource.data);
+        allow delete: if false;
+      }
+
+      match /weights/{logId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) && validWeight(request.resource.data);
+        allow delete: if false;
+      }
+
+      match /kicks/{dayId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) && validKicks(request.resource.data, dayId);
+        allow delete: if false;
       }
     }
   }

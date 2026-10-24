@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
+import { saveToMyProfile } from "@/lib/firebase";
 
 const QUESTIONS = [
   { id: 1, text: "ภาวะความดันโลหิตสูง คือ ภาวะที่แรงดันเลือดในหลอดเลือดแดงสูงกว่าปกติ อย่างต่อเนื่อง โดยมีค่าความดันตั้งแต่ 140/90 มิลลิเมตรปรอท ขึ้นไป หากปล่อยไว้ โดยไม่รักษาจะทำให้หลอดเลือดเสียหายและเสี่ยงเกิดโรคแทรกซ้อนรุนแรง", answer: true },
@@ -43,7 +44,8 @@ export default function Quiz({ type, title }: QuizProps) {
   const progressPercent = (currentStep / totalSteps) * 100;
 
   const handleAnswer = (val: boolean) => {
-    setAnswers((prev) => ({ ...prev, [QUESTIONS[currentStep].id]: val }));
+    const nextAnswers = { ...answers, [QUESTIONS[currentStep].id]: val };
+    setAnswers(nextAnswers);
     setIsAdvancing(true);
 
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -54,6 +56,10 @@ export default function Quiz({ type, title }: QuizProps) {
       if (currentStep < totalSteps - 1) {
         setCurrentStep(prev => prev + 1);
       } else {
+        // ส่งให้หน้า admin เทียบก่อน/หลังเรียน (เก็บครั้งล่าสุด) — บันทึกไม่ได้ก็ยังแสดงคะแนนตามปกติ
+        const result = { score: calculateScore(nextAnswers), total: totalSteps, at: new Date().toISOString() };
+        saveToMyProfile({ [type === "pre-test" ? "preTest" : "postTest"]: result })
+          .catch((err) => console.error("Error saving quiz score:", err));
         setIsFinished(true);
       }
     }, 300);
@@ -69,10 +75,10 @@ export default function Quiz({ type, title }: QuizProps) {
     }
   };
 
-  const calculateScore = () => {
+  const calculateScore = (given: Record<number, boolean> = answers) => {
     let score = 0;
     QUESTIONS.forEach((q) => {
-      if (answers[q.id] === q.answer) {
+      if (given[q.id] === q.answer) {
         score += 1;
       }
     });
@@ -82,21 +88,21 @@ export default function Quiz({ type, title }: QuizProps) {
   if (isFinished) {
     const score = calculateScore();
     return (
-      <div className="min-h-dvh flex flex-col bg-slate-50 pt-12 pb-8 px-6">
+      <div className="h-dvh overflow-hidden flex flex-col bg-slate-50 pt-12 short:pt-6 pb-8 short:pb-4 px-6 md:max-w-2xl md:mx-auto md:w-full md:shadow-sm">
         <FloatingParticles count={20} />
-        <h1 className="text-2xl font-bold text-slate-800 text-center mb-8 relative z-10">สรุปผลคะแนน {title}</h1>
+        <h1 className="text-2xl font-bold text-slate-800 text-center mb-8 short:mb-4 relative z-10">สรุปผลคะแนน {title}</h1>
         
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="rounded-3xl p-8 flex flex-col items-center text-center shadow-sm bg-blue-50 relative z-10"
+          className="rounded-3xl p-8 short:p-5 flex flex-col items-center text-center shadow-sm bg-blue-50 relative z-10"
         >
           <CheckCircle2 className="w-12 h-12 text-blue-500" />
           <h2 className="text-4xl font-bold mt-4 mb-1 text-blue-600">{score} / {totalSteps}</h2>
           <p className="text-slate-600/90 font-medium mt-2">ทำแบบทดสอบเสร็จสมบูรณ์</p>
         </motion.div>
 
-        <div className="mt-auto pt-8">
+        <div className="mt-auto pt-8 short:pt-4">
           <button
             onClick={() => router.push("/#education")}
             className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 active:scale-95 transition-all"
@@ -111,8 +117,8 @@ export default function Quiz({ type, title }: QuizProps) {
   const currentQ = QUESTIONS[currentStep];
 
   return (
-    <div className="min-h-dvh flex flex-col pt-safe pb-8 relative overflow-hidden bg-slate-50">
-      <header className="px-4 py-4 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
+    <div className="h-dvh flex flex-col pt-safe pb-6 short:pb-3 relative overflow-hidden bg-slate-50 md:max-w-2xl md:mx-auto md:w-full md:shadow-sm">
+      <header className="px-4 py-4 short:py-1 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md">
         <button onClick={handleBack} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors" aria-label="ย้อนกลับ">
           <ChevronLeft className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -131,7 +137,7 @@ export default function Quiz({ type, title }: QuizProps) {
         />
       </div>
 
-      <div className="flex-1 px-6 flex flex-col relative mt-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 flex flex-col relative mt-6 short:mt-3">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -139,18 +145,18 @@ export default function Quiz({ type, title }: QuizProps) {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -50, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="flex flex-col h-full"
+            className="flex flex-col"
           >
             <h2 className="text-blue-500 font-semibold mb-2">{title}</h2>
-            <h3 className="text-xl font-bold text-slate-800 leading-snug text-balance">
+            <h3 className="text-xl short:text-lg phone-landscape:text-base font-bold text-slate-800 leading-snug text-balance">
               {currentQ.text}
             </h3>
 
-            <div className="mt-12 flex flex-col gap-4">
+            <div className="mt-12 short:mt-5 flex flex-col gap-4 short:gap-3 phone-landscape:grid phone-landscape:grid-cols-2">
               <button
                 onClick={() => handleAnswer(true)}
                 className={cn(
-                  "w-full py-5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
+                  "w-full py-5 short:py-3.5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
                   answers[currentQ.id] === true && "bg-emerald-50 text-emerald-900"
                 )}
               >
@@ -170,7 +176,7 @@ export default function Quiz({ type, title }: QuizProps) {
               <button
                 onClick={() => handleAnswer(false)}
                 className={cn(
-                  "w-full py-5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-rose-50 hover:text-rose-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
+                  "w-full py-5 short:py-3.5 px-6 rounded-2xl bg-white shadow-sm text-left font-semibold text-slate-800 hover:bg-rose-50 hover:text-rose-900 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden",
                   answers[currentQ.id] === false && "bg-rose-50 text-rose-900"
                 )}
               >

@@ -12,11 +12,17 @@
   
   --animate-shimmer: shimmer 1.5s infinite;
   --animate-blob: blob 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-glow: glow 4s ease-in-out infinite;
   
   @keyframes shimmer {
     100% {
       transform: translateX(100%);
     }
+  }
+
+  @keyframes glow {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.1); opacity: 1; }
   }
 
   @keyframes blob {
@@ -38,7 +44,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  min-height: 100dvh;
+  min-height: 100svh; /* svh ไม่เปลี่ยนตอนแถบเบราว์เซอร์ยืดหด จึงไม่ต้องจัดหน้าใหม่ระหว่างเลื่อน */
 }
 
 /* พื้นหลังไล่สีแบบติดจอ: ใช้ชั้น fixed แทน background-attachment: fixed ซึ่งทำให้ต้องวาดใหม่ทั้งจอทุกครั้งที่เลื่อน */
@@ -58,6 +64,18 @@ body::before {
 html {
   scroll-behavior: smooth;
 }
+
+/* จอคอม: เว้นที่ให้แถบเมนูข้าง (กว้าง 16rem) เฉพาะหน้าที่มีเมนู — หน้าแบบทดสอบ/login/admin ซ่อนเมนู จึงไม่ต้องเว้น
+   min-height 501px = ไม่ใช่ phone-landscape (ซึ่งซ่อนเมนูข้างแล้วใช้ปุ่ม 3 ขีดแทน) */
+@media (min-width: 48rem) and (min-height: 501px) {
+  body:has([data-sidebar]) [data-main] {
+    margin-left: 16rem;
+  }
+}
+
+/* จอเตี้ย (มือถือส่วนใหญ่เมื่อมีแถบเบราว์เซอร์) — ใช้ย่อหน้าแบบทดสอบให้พอดีจอ
+   ประกาศก่อน phone-landscape เพื่อให้ phone-landscape ชนะเมื่อเข้าทั้งคู่ */
+@custom-variant short (@media (max-height: 700px));
 
 /* มือถือแนวนอนจริง (กว้าง ≥540px, เตี้ย) — ไม่ใช้ orientation เพราะตอนคีย์บอร์ดเปิดในแนวตั้ง จอจะกลายเป็น "landscape" ชั่วคราว */
 @custom-variant phone-landscape (@media (min-width: 540px) and (max-height: 500px));

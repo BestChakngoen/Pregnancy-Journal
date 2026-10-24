@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={`${promptFont.variable} font-sans antialiased`}>
-      <body className="min-h-dvh flex flex-col md:flex-row bg-slate-50 overflow-x-hidden">
+      <body className="min-h-svh flex flex-col md:flex-row bg-slate-50 overflow-x-hidden">
         <ExternalBrowserRedirect />
         <PopupAlert />
         <Toaster 
@@ -46,13 +46,13 @@ export default function RootLayout({
         <BottomNav />
         
         {/* Main Content Area - scales to max-w-7xl on desktop */}
-        <div className="flex-1 w-full max-w-md md:max-w-7xl phone-landscape:max-w-4xl mx-auto bg-white/30 isolate min-h-dvh shadow-sm relative transition-all duration-300 md:ml-64 phone-landscape:ml-0 flex flex-col">
+        <div className="flex-1 w-full max-w-md md:max-w-7xl phone-landscape:max-w-4xl mx-auto bg-white/30 isolate min-h-svh shadow-sm relative transition-all duration-300 flex flex-col" data-main>
           
           {/* Full-width mesh background */}
           <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent opacity-80" />
           <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-transparent opacity-80 animate-blob" />
           
-          <div className="flex-1 w-full flex flex-col pb-20 md:pb-0 phone-landscape:pb-0 phone-landscape:pt-12">
+          <div className="flex-1 w-full flex flex-col">
             {children}
           </div>
         </div>

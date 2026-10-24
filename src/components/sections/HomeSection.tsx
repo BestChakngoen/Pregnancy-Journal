@@ -71,7 +71,7 @@ export default function HomeSection() {
       />
       
       {/* Header */}
-      <header className="flex flex-col gap-4 p-6 pb-2">
+      <header className="flex flex-col gap-4 p-6 md:px-10 pb-2">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-blue-500 tracking-tight">MomSafe</h1>
           <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export default function HomeSection() {
 
         {/* Daily Tip */}
         <div className="md:col-span-4 md:row-start-2 flex flex-col gap-6 md:justify-end">
-        <section className="flex items-center justify-between p-5 bg-gradient-to-r from-yellow-50 to-orange-50/30 border border-white/60 backdrop-blur-md rounded-[1.5rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:brightness-95 transition-all cursor-pointer active:scale-[0.98]">
+        <section className="flex items-center justify-between p-5 bg-gradient-to-r from-yellow-50 to-orange-50/30 border border-white/60 rounded-[1.5rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:brightness-95 transition-all cursor-pointer active:scale-[0.98]">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-yellow-100/80 rounded-xl">
               <Lightbulb className="w-5 h-5 text-yellow-600" />

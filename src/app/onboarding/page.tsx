@@ -96,7 +96,7 @@ export default function Onboarding() {
   const labelClasses = "block text-sm font-semibold text-slate-700/90 mb-2 ml-1 flex items-center gap-2";
 
   return (
-    <div className="min-h-dvh flex flex-col md:flex-row md:items-center pt-12 pb-12 px-6 relative w-full max-w-5xl mx-auto md:gap-16">
+    <div className="min-h-svh flex flex-col md:flex-row md:items-center pt-12 pb-12 px-6 relative w-full max-w-5xl mx-auto md:gap-16">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-200/40 rounded-full blur-3xl -z-10 -translate-x-1/3 translate-y-1/3" />

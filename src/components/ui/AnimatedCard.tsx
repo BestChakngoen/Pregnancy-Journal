@@ -27,7 +27,7 @@ export default function AnimatedCard({
     <motion.button 
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center p-4 backdrop-blur-md rounded-[1.75rem]",
+        "relative flex flex-col items-center p-4 rounded-[1.75rem]",
         colorClass,
         "shadow-[0_8px_24px_-8px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.08)]",
         "transition-all text-center w-full group overflow-hidden border border-white/40",

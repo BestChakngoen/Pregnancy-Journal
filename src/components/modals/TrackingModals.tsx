@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Portal from "@/components/ui/Portal";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ interface BaseModalProps {
 
 export function Modal({ isOpen, onClose, title, children }: BaseModalProps) {
   return (
+    <Portal>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -28,7 +30,7 @@ export function Modal({ isOpen, onClose, title, children }: BaseModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-4 right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-2xl p-6 z-50 overflow-hidden"
+            className="fixed left-4 right-4 top-1/2 -translate-y-1/2 md:max-w-md md:mx-auto bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-2xl p-6 z-50 overflow-hidden"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-slate-800">{title}</h3>
@@ -44,6 +46,7 @@ export function Modal({ isOpen, onClose, title, children }: BaseModalProps) {
         </>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }
 

@@ -19,23 +19,23 @@ export function BPChart({ data }: { data: object[] }) {
   );
 }
 
-export function WeightChart() {
+export function WeightChart({ data }: { data: { date: string; kg: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={[]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} domain={['dataMin - 1', 'dataMax + 1']} />
         <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.6)', backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-        <Line type="monotone" dataKey="weight" name="น้ำหนัก" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
+        <Line type="monotone" dataKey="kg" name="น้ำหนัก (กก.)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
       </LineChart>
     </ResponsiveContainer>
   );
 }
 
-export function KicksChart() {
+export function KicksChart({ data }: { data: { date: string; count: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={[]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
         <ReferenceLine y={10} stroke="#fca5a5" strokeDasharray="4 4" />
         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} />

@@ -22,12 +22,16 @@ const sections = [
 
 export default function Home() {
   return (
-    <>
+    // เว้นที่ให้แถบเมนูล่าง (และปุ่ม 3 ขีดในแนวนอน) — หน้าที่ซ่อนเมนูไม่ต้องเว้น
+    <div className="pb-20 md:pb-0 phone-landscape:pb-0 phone-landscape:pt-12">
       {sections.map(({ id, Component }) => (
-        <section key={id} id={id} className="min-h-dvh">
-          <Component />
+        <section key={id} id={id} className="min-h-svh">
+          {/* จอคอม: ทุกส่วนกว้างเท่ากันและอยู่กลาง */}
+          <div className="md:max-w-5xl md:mx-auto">
+            <Component />
+          </div>
         </section>
       ))}
-    </>
+    </div>
   );
 }

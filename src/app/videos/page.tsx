@@ -8,7 +8,7 @@ export default function VideosPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-dvh flex flex-col bg-slate-50 pt-safe pb-8 relative overflow-hidden">
+    <div className="min-h-svh flex flex-col bg-slate-50 pt-safe pb-8 relative overflow-hidden pb-20 md:pb-0 phone-landscape:pb-0 phone-landscape:pt-12">
       {/* Header */}
       <header className="px-4 py-4 flex items-center justify-between z-10 bg-slate-50/80 backdrop-blur-md sticky top-0">
         <button onClick={() => router.back()} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">

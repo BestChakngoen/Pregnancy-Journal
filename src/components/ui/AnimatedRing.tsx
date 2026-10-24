@@ -20,12 +20,8 @@ export default function AnimatedRing({
   return (
     <div className="relative flex items-center justify-center p-6">
       <div className="relative w-56 h-56">
-        {/* Glowing Background Effect */}
-        <motion.div 
-          className="absolute inset-[-20%] bg-[radial-gradient(circle,rgba(249,168,212,0.4)_0%,transparent_60%)] rounded-full pointer-events-none"
-          animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
+        {/* Glowing Background Effect — CSS animation วิ่งบน compositor ไม่กิน main thread ทุกเฟรมแบบ framer-motion */}
+        <div className="absolute inset-[-20%] bg-[radial-gradient(circle,rgba(249,168,212,0.4)_0%,transparent_60%)] rounded-full pointer-events-none animate-glow" />
         
         {/* SVG Ring */}
         <svg className="w-full h-full -rotate-90 relative z-10 pointer-events-none" viewBox="0 0 100 100">
@@ -56,7 +52,7 @@ export default function AnimatedRing({
         
         {/* Inner Content */}
         <motion.div 
-          className="absolute inset-0 flex items-center justify-center flex-col bg-white/20 rounded-full m-5 shadow-[inset_0_0_20px_rgba(255,255,255,0.8)] backdrop-blur-md z-20 pointer-events-auto"
+          className="absolute inset-0 flex items-center justify-center flex-col bg-white/20 rounded-full m-5 shadow-[inset_0_0_20px_rgba(255,255,255,0.8)] z-20 pointer-events-auto"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}

@@ -10,7 +10,7 @@
 - **Stack:** Next.js 16 (App Router) · React 19 · Tailwind v4 · Framer Motion · Zustand · Firebase Firestore · Recharts · react-hot-toast · lucide-react
 - **ภาษา UI:** ไทยทั้งหมด (ฟอนต์ Prompt) · mobile-first, desktop มี sidebar
 - **Login:** Firebase Auth (Email/Password) โดยแปลงชื่อเป็นอีเมลภายใน `{hex ของชื่อ}@momsafe.app` (`login/page.tsx`); ชื่อที่แสดงเก็บใน `displayName`. ข้อมูลใน Firestore ใช้ **uid** เป็น document id `users/{uid}` (เอา uid จาก `currentUid()` ใน `lib/firebase.ts` ไม่ใช่จาก localStorage) — สิทธิ์ตรวจโดย `firestore.rules`
-- **ข้อมูลอยู่ 2 ที่:** localStorage (โปรไฟล์ + น้ำหนัก/ลูกดิ้น/ความดันหน้า tracking) กับ Firestore (โปรไฟล์, ความดันจาก Dashboard, ผลความพึงพอใจ)
+- **ข้อมูลอยู่ 2 ที่:** localStorage (โปรไฟล์ + ค่าล่าสุดของส่วนบันทึกสุขภาพ ใช้ได้แม้ออฟไลน์) กับ Firestore (โปรไฟล์, ผลแบบทดสอบ/แบบประเมิน, ความดัน/น้ำหนัก/ลูกดิ้นทุกรายการ)
 
 ## 2. ถ้าจะแก้... ให้ไปที่...
 
@@ -34,9 +34,10 @@
 | บันทึกความดัน/น้ำหนัก **จากหน้า tracking** (ลง localStorage) | `src/components/modals/TrackingModals.tsx` + `src/lib/trackingStore.ts` |
 | นับลูกดิ้น | `src/components/sections/HealthLogSection.tsx` (`addKick`) + `trackingStore.ts` |
 | บันทึกสุขภาพ (bento grid; อยู่ต่อท้ายหน้าหลัก) | `src/components/sections/HealthLogSection.tsx` |
-| แบบประเมินความเสี่ยง (คำถาม + คะแนน + เกณฑ์สูง/กลาง/ต่ำ) | `src/app/assessment/page.tsx` (`QUESTIONS`, `calculateRisk`) |
+| แบบประเมินความเสี่ยง (คำถาม + คะแนน + เกณฑ์สูง/กลาง/ต่ำ) | คำถาม/เกณฑ์: `src/lib/questions.ts` (`ASSESSMENT_QUESTIONS`, `riskLevelOf`) · หน้า: `src/app/assessment/page.tsx` |
 | ข้อสอบ Pre-test / Post-test (คำถาม, เฉลย) | `src/components/quiz/Quiz.tsx` (`QUESTIONS`) — หน้า `pre-test/page.tsx` กับ `post-test/page.tsx` เป็นแค่ wrapper ส่ง `type` + `title` |
-| แบบประเมินความพึงพอใจ (8 ข้อ, 1–5 ดาว, บันทึกลง Firestore) | `src/app/satisfaction/page.tsx` |
+| แบบประเมินความพึงพอใจ (8 ข้อ, 1–5 ดาว, บันทึกลง Firestore) | คำถาม: `src/lib/questions.ts` (`SATISFACTION_QUESTIONS`) · หน้า: `src/app/satisfaction/page.tsx` |
+| ส่วนวิเคราะห์ในหน้า Admin (KPI, กราฟคะแนนก่อน/หลัง, ความเสี่ยง, ความดันรายวัน, ความพึงพอใจ, รายคน) | คำนวณ: `src/lib/analytics.ts` (`buildAnalytics`) · UI: `src/components/admin/AdminAnalytics.tsx`, `PatientList.tsx` · กราฟ: `src/components/charts/AdminCharts.tsx` (lazy) |
 | ศูนย์ความรู้ (ลำดับขั้น 1-2-3) | `src/components/sections/EducationSection.tsx` |
 | E-book (iframe Heyzine, บังคับแนวนอน) | `src/app/education/ebook/page.tsx` (URL อยู่ใน `<iframe src>`) + ปุ่มเปิดใน `sections/EducationSection.tsx` |
 | วิดีโอ + สรุปเนื้อหา | `src/app/videos/page.tsx` · ไฟล์วิดีโอ `public/videos/Video.mp4` · poster `public/images/lemon.jpg` |
@@ -60,11 +61,11 @@
 | `/login` | `login/page.tsx` | สมัคร/เข้าสู่ระบบ; มีข้อมูลส่วนตัวใน Firestore แล้ว → `/` ไม่มี → `/onboarding` |
 | `/onboarding` | `onboarding/page.tsx` | ต้องล็อกอินก่อน (ไม่งั้นเด้งไป `/login`); เช็ค/สร้าง doc `users/{uid}`; ถ้า Firestore พัง fallback เก็บ local |
 | `/tracking` | `tracking/page.tsx` | redirect → `/#tracking` (ประวัติสุขภาพ: `sections/TrackingSection.tsx`) |
-| `/assessment` | `assessment/page.tsx` | ผลคำนวณแล้ว **ไม่ได้บันทึก** ที่ไหน |
+| `/assessment` | `assessment/page.tsx` | บันทึกผลล่าสุดลง `users/{uid}.assessment` `{totalRisk, level, factors, at}` |
 | `/education` | `education/page.tsx` | redirect → `/#education` (เนื้อหาอยู่ที่ `sections/EducationSection.tsx`) |
 | `/education/ebook` | `education/ebook/page.tsx` | |
 | `/videos` | `videos/page.tsx` | |
-| `/pre-test`, `/post-test` | wrapper → `Quiz` | คะแนน **ไม่ได้บันทึก** ที่ไหน |
+| `/pre-test`, `/post-test` | wrapper → `Quiz` | บันทึกครั้งล่าสุดลง `users/{uid}.preTest` / `.postTest` `{score, total, at}` |
 | `/satisfaction` | `satisfaction/page.tsx` | บันทึก `satisfaction` ลง `users/{uid}` (merge) |
 | `/profile` | `profile/page.tsx` | redirect → `/#profile` (เนื้อหาอยู่ที่ `sections/ProfileSection.tsx`) |
 | `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง |
@@ -77,10 +78,10 @@
 |---|---|---|---|
 | โปรไฟล์ (`UserProfile`) | localStorage `bumply_user` + Firestore `users/{uid}` | `userStore.loginOrSaveUser` (local), onboarding / EditProfileModal (Firestore) | ทุกหน้าผ่าน `useUserStore()` |
 | วันกำหนดคลอด (EDD) | localStorage เท่านั้น (ใน `bumply_user`) | `page.tsx` → `handleEddChange` | `AnimatedRing` |
-| ความดัน (หน้า tracking) | localStorage `bumply_tracking_data` | `TrackingModals` → `trackingStore.updateBloodPressure` | `sections/HealthLogSection.tsx` |
-| น้ำหนัก, ลูกดิ้น | localStorage `bumply_tracking_data` | `trackingStore` | `sections/HealthLogSection.tsx` (ประวัติ tab น้ำหนัก/ลูกดิ้นใน TrackingSection ยังว่าง) |
-| ความดัน (หน้าแรก) | Firestore `users/{uid}/bloodPressures` | `BloodPressureLogger` | `sections/TrackingSection.tsx` (30 รายการล่าสุด) |
-| ความพึงพอใจ | Firestore `users/{uid}.satisfaction` | `satisfaction/page.tsx` | `admin/page.tsx` (type มี field แต่ยังไม่แสดง) |
+| ความดัน (ส่วนบันทึกสุขภาพ) | localStorage `bumply_tracking_data` (ค่าล่าสุด) + Firestore `users/{uid}/bloodPressures` | `TrackingModals` → `trackingStore.saveBloodPressure` → `lib/healthLogs.ts` (แก้ไข = ทับรายการเดิม) | `sections/HealthLogSection.tsx`, `TrackingSection.tsx`, admin |
+| น้ำหนัก, ลูกดิ้น | localStorage (ค่าล่าสุด/ยอดวันนี้) + Firestore `users/{uid}/weights`, `users/{uid}/kicks/{YYYY-MM-DD}` (`increment`) | `trackingStore` → `lib/healthLogs.ts` | `sections/HealthLogSection.tsx`, `TrackingSection.tsx`, admin |
+| ความดัน (หน้าแรก) | Firestore `users/{uid}/bloodPressures` | `BloodPressureLogger` → `lib/healthLogs.ts` | `sections/TrackingSection.tsx` (30 รายการล่าสุด), admin |
+| ความพึงพอใจ | Firestore `users/{uid}.satisfaction` | `satisfaction/page.tsx` | `admin/page.tsx` → ส่วนวิเคราะห์ |
 | Popup state | Zustand (memory) | `showAlert` | `PopupAlert` |
 
 Stores: `src/lib/userStore.ts`, `src/lib/trackingStore.ts` เป็น **custom hook ธรรมดา (useState + localStorage)** ไม่ใช่ Zustand — แต่ละที่ที่เรียกมี state ของตัวเอง ไม่ sync กัน. มีแค่ `alertStore.ts` ที่ใช้ Zustand จริง
@@ -117,7 +118,7 @@ src/components/
 
 1. **Firebase API key ฝังเป็น fallback ใน `src/lib/firebase.ts`** (ปกติ key ของ web config ไม่ถือเป็นความลับ แต่ความปลอดภัยจริงขึ้นกับ Firestore Security Rules — rules อยู่ที่ `firestore.rules`)
 2. ~~รหัส Admin `admin123` ฝั่ง client~~ — เปลี่ยนเป็นรายชื่อ `admins/{uid}` + `firestore.rules` แล้ว
-5. **ความดันมี 2 ทางที่ไม่เชื่อมกัน:** หน้าแรก → Firestore (+เตือนความเสี่ยง), หน้า tracking → localStorage (ไม่มีเตือน, ไม่เข้ากราฟประวัติ)
+5. **ความดันมี 2 ทางเข้า** (ปุ่มลัดหน้าแรก กับส่วนบันทึกสุขภาพ) — ลง `bloodPressures` ที่เดียวกันแล้ว แต่เฉพาะปุ่มลัดหน้าแรกที่แสดงคำเตือนความเสี่ยง
 6. **ผล Pre/Post-test และผลประเมินความเสี่ยงไม่ถูกบันทึก** (PRODUCT.md คาดว่าจะวัดความรู้/สรุปผล)
 7. **Doc id = ชื่อ lowercase** → คนชื่อซ้ำ = ใช้บัญชีเดียวกัน และ `EditProfileModal` ถ้าเปลี่ยนชื่อจะสร้าง doc ใหม่ แทนที่จะแก้ doc เดิม
 8. **หน้าแรกไม่มี Symptom Logger / Red Flag Alert แล้ว** (ลบใน working tree) แต่ `PRODUCT.md` ยังเขียนว่าเป็น core feature
