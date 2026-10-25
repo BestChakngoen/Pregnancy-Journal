@@ -6,10 +6,14 @@ import Portal from "@/components/ui/Portal";
 import { X, Check, User, CalendarDays, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
-import { useUserStore } from "@/lib/userStore";
+import { useUserStore, type UserProfile } from "@/lib/userStore";
 import { db, currentUid } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore/lite";
 import { useAlertStore } from "@/lib/alertStore";
+import { pullProfile } from "@/lib/cloudSync";
+
+// ช่องที่แก้ได้ในฟอร์ม (ชื่อผูกกับบัญชี แก้ไม่ได้)
+const EDITABLE = ["age", "gestationalWeeks", "gravida"] as const;
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -45,20 +49,19 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
     setIsSaving(true);
     
     try {
-      const newProfile = {
-        name: formData.name.trim(),
-        age: formData.age,
-        gestationalWeeks: formData.gestationalWeeks,
-        gravida: formData.gravida,
-      };
-
       // Attempt to save to Firebase
       const uid = await currentUid();
       if (!uid) throw new Error("not signed in"); // ตกไปบันทึกในเครื่องตาม catch ด้านล่าง
-      await setDoc(doc(db, "users", uid), newProfile, { merge: true });
-      
-      // Update local state
-      loginOrSaveUser(newProfile);
+
+      // ซิงค์จาก Cloud ก่อนบันทึก แล้วเขียนเฉพาะช่องที่ผู้ใช้แก้จริง — ช่องที่เปลี่ยนจากอุปกรณ์อื่นจะไม่ถูกทับด้วยค่าเก่าในเครื่อง
+      // (ซิงค์ไม่ได้ = null: บันทึกต่อด้วยข้อมูลในเครื่อง)
+      const cloud = await pullProfile();
+      const changed: Partial<Pick<UserProfile, (typeof EDITABLE)[number]>> = {};
+      for (const f of EDITABLE) if (formData[f] !== user?.[f]) changed[f] = formData[f];
+      if (Object.keys(changed).length > 0) await setDoc(doc(db, "users", uid), changed, { merge: true });
+
+      // Update local state: ค่าล่าสุดจาก Cloud + สิ่งที่เพิ่งแก้ (คงช่องที่มีแค่ในเครื่อง เช่น วันกำหนดคลอด)
+      loginOrSaveUser({ name: formData.name.trim(), age: "", gestationalWeeks: "", gravida: "1", ...user, ...cloud, ...changed });
 
       setTimeout(() => {
         setIsSaving(false);
@@ -79,8 +82,8 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
         gestationalWeeks: formData.gestationalWeeks,
         gravida: formData.gravida,
       };
-      loginOrSaveUser(localProfile);
-      
+      loginOrSaveUser({ ...user, ...localProfile });
+
       setTimeout(() => {
         setIsSaving(false);
         onClose();

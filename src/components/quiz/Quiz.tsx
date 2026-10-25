@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
-import { saveToMyProfile } from "@/lib/firebase";
+import { saveResult } from "@/lib/saveResult";
 
 const QUESTIONS = [
   { id: 1, text: "ภาวะความดันโลหิตสูง คือ ภาวะที่แรงดันเลือดในหลอดเลือดแดงสูงกว่าปกติ อย่างต่อเนื่อง โดยมีค่าความดันตั้งแต่ 140/90 มิลลิเมตรปรอท ขึ้นไป หากปล่อยไว้ โดยไม่รักษาจะทำให้หลอดเลือดเสียหายและเสี่ยงเกิดโรคแทรกซ้อนรุนแรง", answer: true },
@@ -56,9 +56,9 @@ export default function Quiz({ type, title }: QuizProps) {
       if (currentStep < totalSteps - 1) {
         setCurrentStep(prev => prev + 1);
       } else {
-        // ส่งให้หน้า admin เทียบก่อน/หลังเรียน (เก็บครั้งล่าสุด) — บันทึกไม่ได้ก็ยังแสดงคะแนนตามปกติ
+        // ส่งให้หน้า admin เทียบก่อน/หลังเรียน (เก็บครั้งแรก + ครั้งล่าสุด) — บันทึกไม่ได้ก็ยังแสดงคะแนนตามปกติ
         const result = { score: calculateScore(nextAnswers), total: totalSteps, at: new Date().toISOString() };
-        saveToMyProfile({ [type === "pre-test" ? "preTest" : "postTest"]: result })
+        saveResult(type === "pre-test" ? "preTest" : "postTest", result)
           .catch((err) => console.error("Error saving quiz score:", err));
         setIsFinished(true);
       }

@@ -127,7 +127,7 @@ export default function AdminAnalytics({ a }: { a: Analytics }) {
         <Tile label="ความพึงพอใจเฉลี่ย" value={`${fmt(a.satisfactionAvg)} / 5`} caption={`ตอบแล้ว ${a.satisfactionRespondents} คน`} />
       </div>
 
-      <Card title="คะแนนความรู้ก่อน–หลังเรียน" subtitle={`จำนวนคนในแต่ละคะแนน (เต็ม ${a.scoreTotal})`}>
+      <Card title="คะแนนความรู้ก่อน–หลังเรียน" subtitle={`จำนวนคนในแต่ละคะแนน (เต็ม ${a.scoreTotal}) · ก่อนเรียน = ครั้งแรก, หลังเรียน = ครั้งล่าสุด`}>
         {a.preCount + a.postCount === 0 ? (
           <Empty>ยังไม่มีผู้ทำแบบทดสอบ</Empty>
         ) : (

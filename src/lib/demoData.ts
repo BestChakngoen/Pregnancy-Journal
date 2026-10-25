@@ -48,6 +48,13 @@ export function buildDemoData(now = new Date()): HealthData {
     if (i % 5 !== 4) p.assessment = { totalRisk, level: riskLevelOf(totalRisk), factors, at: daysAgo(joined - 1).toISOString() };
     if (i % 4 !== 3) p.postTest = { score: Math.min(10, preScore + int(0, 4)), total: 10, at: daysAgo(int(0, 3)).toISOString() };
     if (i % 3 !== 2) p.satisfaction = Object.fromEntries(Array.from({ length: 8 }, (_, q) => [String(q + 1), int(3, 5)]));
+
+    // ทำซ้ำ: บางคนมี "ครั้งแรก" ต่างจากครั้งล่าสุด — คำนวณจากค่าที่มีอยู่ ไม่ใช้ตัวสุ่ม เพื่อให้ข้อมูลตัวอย่างชุดเดิมไม่เปลี่ยน
+    const earlier = (at: string, days: number) => new Date(new Date(at).getTime() - days * 864e5).toISOString();
+    if (i % 3 === 0) p.preTestFirst = { ...p.preTest!, score: Math.max(0, preScore - 2), at: earlier(p.preTest!.at, 2) };
+    if (p.postTest && i % 4 === 1) p.postTestFirst = { ...p.postTest, score: Math.max(0, p.postTest.score - 2), at: earlier(p.postTest.at, 3) };
+    if (p.assessment && i % 5 === 1) p.assessmentFirst = { totalRisk: 0, level: "low", factors: [], at: earlier(p.assessment.at, 2) };
+    if (p.satisfaction && i % 3 === 0) p.satisfactionFirst = Object.fromEntries(Object.entries(p.satisfaction).map(([k, v]) => [k, Math.max(1, v - 1)]));
     data.patients.push(p);
 
     for (let d = joined; d >= stop; d -= int(2, 5)) {

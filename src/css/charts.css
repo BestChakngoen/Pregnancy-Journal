@@ -1,0 +1,11 @@
+/* กราฟ (Recharts): คลิก/แตะไม่ต้องมีกรอบโฟกัสรอบ svg
+   Recharts ทำให้ svg รับโฟกัสได้เพื่อให้ใช้คีย์บอร์ดไล่ดูค่า — ผู้ใช้คีย์บอร์ดที่ Tab เข้ามายังเห็นกรอบตามปกติ (:focus-visible)
+   และปิดสีแว้บตอนแตะบนมือถือ ไม่ใช้เส้นขอบ/กรอบสว่างใดๆ ตามกฎ Frameless */
+.recharts-wrapper:focus:not(:focus-visible),
+.recharts-wrapper :focus:not(:focus-visible) {
+  outline: none;
+}
+
+.recharts-wrapper {
+  -webkit-tap-highlight-color: transparent;
+}

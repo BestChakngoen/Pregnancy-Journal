@@ -1,0 +1,44 @@
+/* หน้าหลักของคุณแม่บนจอสัมผัส (มือถือ/แท็บเล็ต): เลื่อนในกล่อง [data-scroller] แทนการเลื่อนทั้งเอกสาร
+   เบราว์เซอร์มือถือซ่อน/แสดงแถบที่อยู่และแท็บเฉพาะตอน "เอกสาร" เลื่อน — เลื่อนในกล่องภายในแล้วแถบจะค้างแสดงไว้ ไม่ยุบ
+   ใช้เฉพาะหน้าที่มี [data-home] (page.tsx); หน้าอื่นและเมาส์บนคอม [data-scroller] เป็น display: contents คือไม่มีผลต่อผังเลย */
+[data-scroller] {
+  display: contents;
+}
+
+@media (pointer: coarse) {
+  html:has([data-home]),
+  body:has([data-home]) {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body:has([data-home]) [data-scroller] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    scroll-behavior: smooth;
+  }
+
+  /* ล็อกพื้นหลังไม่ให้เลื่อนขณะ modal ที่ติด data-scroll-lock เปิดอยู่ (ต้องอยู่หลังกฎด้านบน) */
+  body:has([data-home]):has([data-scroll-lock]) [data-scroller] {
+    overflow: hidden;
+  }
+}
+
+/* พิมพ์ต้องได้ทั้งหน้า: ยกเลิกกล่องเลื่อน ไม่งั้นพิมพ์ได้แค่ส่วนที่เห็นบนจอ */
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  [data-scroller] {
+    display: contents !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+}

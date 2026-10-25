@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CheckCircle2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingParticles from "@/components/ui/FloatingParticles";
-import { saveToMyProfile } from "@/lib/firebase";
+import { saveResult } from "@/lib/saveResult";
 import { SATISFACTION_QUESTIONS as QUESTIONS } from "@/lib/questions";
 import { useUserStore } from "@/lib/userStore";
 
@@ -46,7 +46,7 @@ export default function SatisfactionSurvey() {
         // Last step: Save to Firebase
         if (user?.name) {
           try {
-            await saveToMyProfile({ satisfaction: newAnswers });
+            await saveResult("satisfaction", newAnswers);
           } catch (err) {
             console.error("Error saving satisfaction survey:", err);
           }

@@ -19,20 +19,25 @@
 | เมนูล่าง/ sidebar (เพิ่ม-ลบเมนู, ซ่อมเมนูในบางหน้า) | `src/components/layout/BottomNav.tsx` (`navItems`, `hiddenPaths`) |
 | โครงหน้า, ฟอนต์, พื้นหลัง, Toaster, ตัวครอบทุกหน้า | `src/app/layout.tsx` |
 | สี/animation/theme ส่วนกลาง | `src/app/globals.css` |
+| CSS ใหม่ (แยกไฟล์ตามกฎ — ไม่เพิ่มลง `globals.css`) | `src/css/*.css` แล้ว `@import` ที่บนสุดของ `globals.css` (ตอนนี้มี `charts.css` = ปิดกรอบโฟกัสตอนคลิกกราฟ แต่คีย์บอร์ด Tab ยังเห็นกรอบ) |
 | ชื่อแท็บ / meta | `src/app/layout.tsx` (`metadata`) |
 | หน้าแรก (สวัสดี, วงแหวนสัปดาห์, เมนูลัด, ทิปส์ประจำวัน) | `src/components/sections/HomeSection.tsx` |
+| ทิปส์ประจำวัน (หน้าหลัก: สลับข้อเองทุก 8 วินาที เริ่มจากข้อสุ่ม ไม่มีปุ่มควบคุม/หยุด; แก้ข้อความหรือความเร็วที่ไฟล์ข้อมูล) | เนื้อหา + ตัวแปรเวลา + ฟังก์ชันเลือกข้อ `src/lib/dailyTips.ts` (`DAILY_TIPS`, `TIP_INTERVAL_MS`) · การ์ด `src/components/ui/DailyTipCard.tsx` (ทุกข้อซ้อนในกริดเดียว การ์ดสูงเท่าข้อที่ยาวสุด + crossfade; ปิดอนิเมชันเมื่อผู้ใช้ตั้ง "ลดการเคลื่อนไหว") |
 | คำนวณสัปดาห์จากวันกำหนดคลอด (EDD) | `src/components/sections/HomeSection.tsx` → `handleEddChange` |
 | วงแหวนอายุครรภ์ (40 สัปดาห์, input วันคลอด) | `src/components/ui/AnimatedRing.tsx` |
 | หน้าสมัคร/เข้าสู่ระบบด้วยชื่อ + รหัสผ่าน (Firebase Auth) | `src/app/login/page.tsx` (`nameToEmail`, `errorMessage`) |
 | ฟอร์มข้อมูลส่วนตัวหลังล็อกอิน (อายุ, อายุครรภ์, Gravida) | `src/app/onboarding/page.tsx` |
 | ออกจากระบบ | `src/components/sections/ProfileSection.tsx` → `handleLogout`, `userStore.logout` |
 | โปรไฟล์ + เมนูโปรไฟล์ | `src/components/sections/ProfileSection.tsx` |
+| การแจ้งเตือนบนมือถือ (ขั้นแรก: ขอสิทธิ์ + สวิตช์ + เลือกเรื่อง + ปุ่มทดสอบ — **ยังไม่มีระบบส่งเตือนอัตโนมัติ** ต้องมี FCM + Cloud Functions; iPhone ยังไม่รองรับ; ค่าตั้งเก็บในเครื่องและล้างตอนออกจากระบบ) | modal: `src/components/modals/NotificationModal.tsx` (เปิดจากเมนูในโปรไฟล์) · ตรรกะล้วน `src/lib/notificationPrefs.ts` · เรียก API เบราว์เซอร์ `src/lib/notifications.ts` · service worker `public/sw.js` (แตะเตือน = เปิดแอป; ไม่แคช ไม่ดักคำขอ) |
 | แก้ข้อมูลส่วนตัว (modal) | `src/components/modals/EditProfileModal.tsx` |
 | เปลี่ยนรหัสผ่าน (modal) | `src/components/modals/ChangePasswordModal.tsx` (เปิดจากเมนูใน `sections/ProfileSection.tsx`) |
 | ประวัติสุขภาพ + กราฟ (tab ความดัน/น้ำหนัก/ลูกดิ้น) | `src/components/sections/TrackingSection.tsx` (แท็บ "ติดตาม") |
 | บันทึกความดัน **จากหน้าแรก** (ลง Firestore, เตือนถ้า ≥140/90) | `src/components/loggers/BloodPressureLogger.tsx` |
 | บันทึกความดัน/น้ำหนัก **จากหน้า tracking** (ลง localStorage) | `src/components/modals/TrackingModals.tsx` + `src/lib/trackingStore.ts` |
 | นับลูกดิ้น | `src/components/sections/HealthLogSection.tsx` (`addKick`) + `trackingStore.ts` |
+| เก็บผลแบบประเมิน/แบบทดสอบ **ครั้งแรก + ครั้งล่าสุด** (ทำซ้ำได้ ผลล่าสุดทับของเดิม แต่ครั้งแรกเขียนครั้งเดียว — `firestore.rules` บังคับ; อ่านโปรไฟล์ก่อนเขียน อ่านไม่ได้ = ไม่เก็บ; ผู้ใช้เก่าที่มีผลชุดเดียวถือเป็นครั้งแรกเมื่อทำซ้ำ) | `src/lib/saveResult.ts` (เขียนลง Firestore) · ตรรกะเลือกครั้งแรก `src/lib/firstResult.ts` (ฟังก์ชันล้วน) · admin: Pre ใช้ครั้งแรก/Post ใช้ล่าสุด `analytics.ts` (`baselinePre`), รายคนแสดง "ครั้งแรก → ล่าสุด" ใน `admin/PatientList.tsx` |
+| ซิงค์ข้อมูลจาก Cloud **ก่อนบันทึก** (ความดัน/น้ำหนัก/ลูกดิ้น, แก้โปรไฟล์): ดึงรายการล่าสุดมารวมกับในเครื่อง (ใหม่กว่าชนะ), แก้ค่าที่อุปกรณ์อื่นมีรายการใหม่กว่าแล้ว = บันทึกเป็นรายการใหม่ ไม่ทับ, โปรไฟล์เขียนเฉพาะช่องที่แก้; ซิงค์ไม่ได้/ช้าเกิน 3 วินาที = ใช้ข้อมูลในเครื่องตามเดิม | `src/lib/cloudSync.ts` (`pullHealth`, `pullProfile`) · ตรรกะรวมข้อมูล `src/lib/mergeHealth.ts` (ฟังก์ชันล้วน) · ใช้ใน `lib/trackingStore.ts` + `modals/EditProfileModal.tsx` |
 | บันทึกสุขภาพ (bento grid; อยู่ต่อท้ายหน้าหลัก) | `src/components/sections/HealthLogSection.tsx` |
 | แบบประเมินความเสี่ยง (คำถาม + คะแนน + เกณฑ์สูง/กลาง/ต่ำ) | คำถาม/เกณฑ์: `src/lib/questions.ts` (`ASSESSMENT_QUESTIONS`, `riskLevelOf`) · หน้า: `src/app/assessment/page.tsx` |
 | ข้อสอบ Pre-test / Post-test (คำถาม, เฉลย) | `src/components/quiz/Quiz.tsx` (`QUESTIONS`) — หน้า `pre-test/page.tsx` กับ `post-test/page.tsx` เป็นแค่ wrapper ส่ง `type` + `title` |
@@ -62,12 +67,12 @@
 | `/login` | `login/page.tsx` | สมัคร/เข้าสู่ระบบ; มีข้อมูลส่วนตัวใน Firestore แล้ว → `/` ไม่มี → `/onboarding` |
 | `/onboarding` | `onboarding/page.tsx` | ต้องล็อกอินก่อน (ไม่งั้นเด้งไป `/login`); เช็ค/สร้าง doc `users/{uid}`; ถ้า Firestore พัง fallback เก็บ local |
 | `/tracking` | `tracking/page.tsx` | redirect → `/#tracking` (ประวัติสุขภาพ: `sections/TrackingSection.tsx`) |
-| `/assessment` | `assessment/page.tsx` | บันทึกผลล่าสุดลง `users/{uid}.assessment` `{totalRisk, level, factors, at}` |
+| `/assessment` | `assessment/page.tsx` | บันทึกผ่าน `lib/saveResult.ts`: ครั้งล่าสุด `users/{uid}.assessment` `{totalRisk, level, factors, at}` + ครั้งแรก `.assessmentFirst` (เขียนครั้งเดียว) |
 | `/education` | `education/page.tsx` | redirect → `/#education` (เนื้อหาอยู่ที่ `sections/EducationSection.tsx`) |
 | `/education/ebook` | `education/ebook/page.tsx` | |
 | `/videos` | `videos/page.tsx` | |
-| `/pre-test`, `/post-test` | wrapper → `Quiz` | บันทึกครั้งล่าสุดลง `users/{uid}.preTest` / `.postTest` `{score, total, at}` |
-| `/satisfaction` | `satisfaction/page.tsx` | บันทึก `satisfaction` ลง `users/{uid}` (merge) |
+| `/pre-test`, `/post-test` | wrapper → `Quiz` | บันทึกผ่าน `lib/saveResult.ts`: ครั้งล่าสุด `users/{uid}.preTest` / `.postTest` `{score, total, at}` + ครั้งแรก `.preTestFirst` / `.postTestFirst` (เขียนครั้งเดียว) |
+| `/satisfaction` | `satisfaction/page.tsx` | บันทึกผ่าน `lib/saveResult.ts`: ครั้งล่าสุด `users/{uid}.satisfaction` + ครั้งแรก `.satisfactionFirst` (เขียนครั้งเดียว) |
 | `/profile` | `profile/page.tsx` | redirect → `/#profile` (เนื้อหาอยู่ที่ `sections/ProfileSection.tsx`) |
 | `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง · **ดูแบบตัวอย่าง** `/admin?demo=1` = ผู้ป่วยสมมติ 20 คน + ผู้ดูแลสมมติ 5 คน ไม่ต้องล็อกอิน ไม่แตะ Firebase (ข้อมูลอยู่ที่ `src/lib/demoData.ts`) |
 

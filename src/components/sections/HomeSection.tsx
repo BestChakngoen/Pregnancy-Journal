@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import AnimatedRing from "@/components/ui/AnimatedRing";
 import AnimatedCard from "@/components/ui/AnimatedCard";
+import DailyTipCard from "@/components/ui/DailyTipCard";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Lightbulb, ChevronRight, User, Bell, Activity, Loader2 } from "lucide-react";
+import { AlertTriangle, User, Bell, Activity, Loader2 } from "lucide-react";
 import BloodPressureLogger from "@/components/loggers/BloodPressureLogger";
 import { useUserStore } from "@/lib/userStore";
 import { currentUid } from "@/lib/firebase";
@@ -131,18 +132,7 @@ export default function HomeSection() {
 
         {/* Daily Tip */}
         <div className="md:col-span-4 md:row-start-2 flex flex-col gap-6 md:justify-end">
-        <section className="flex items-center justify-between p-5 bg-gradient-to-r from-yellow-50 to-orange-50/30 border border-white/60 rounded-[1.5rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:brightness-95 transition-all cursor-pointer active:scale-[0.98]">
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-yellow-100/80 rounded-xl">
-              <Lightbulb className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800/90">ทิปส์ประจำวัน</p>
-              <p className="text-xs text-slate-600/80 mt-0.5">ดื่มน้ำให้เพียงพอ 8-10 แก้ว</p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-slate-400/80" />
-        </section>
+        <DailyTipCard />
         </div>
       </main>
 

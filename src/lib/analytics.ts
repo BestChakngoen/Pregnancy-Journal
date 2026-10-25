@@ -7,6 +7,13 @@ export interface ScoreResult {
   at: string;
 }
 
+export interface AssessmentResult {
+  totalRisk: number;
+  level: RiskLevel;
+  factors: number[];
+  at: string;
+}
+
 export interface PatientDoc {
   id: string;
   name?: string;
@@ -14,11 +21,20 @@ export interface PatientDoc {
   gestationalWeeks?: string;
   gravida?: string;
   createdAt?: string;
+  // ฟิลด์ปกติ = ครั้งล่าสุด; <ชื่อ>First = ครั้งแรก (เขียนครั้งเดียว) — ผู้ใช้ที่ยังไม่เคยทำซ้ำหลังเริ่มเก็บครั้งแรกอาจไม่มี
   satisfaction?: Record<string, number>;
   preTest?: ScoreResult;
   postTest?: ScoreResult;
-  assessment?: { totalRisk: number; level: RiskLevel; factors: number[]; at: string };
+  assessment?: AssessmentResult;
+  satisfactionFirst?: Record<string, number>;
+  preTestFirst?: ScoreResult;
+  postTestFirst?: ScoreResult;
+  assessmentFirst?: AssessmentResult;
 }
+
+// ฐานเทียบก่อนเรียน = Pre-test "ครั้งแรก" (ทำ Pre-test ซ้ำหลังเรียนแล้วคะแนนเพิ่ม ก็ไม่ทำให้คะแนนที่เพิ่มขึ้นต่ำกว่าความจริง)
+// ไม่มีครั้งแรก = ใช้ครั้งล่าสุด (ข้อมูลก่อนระบบเก็บครั้งแรก)
+export const baselinePre = (p: PatientDoc) => p.preTestFirst ?? p.preTest;
 
 export interface BPLogDoc {
   uid: string;
@@ -147,10 +163,10 @@ export function buildAnalytics({ patients, bp: logs, weights, kicks }: HealthDat
   const latest = latestBPByPatient(logs);
 
   // แบบทดสอบ: เฉลี่ยทั้งหมด + ส่วนต่างเฉพาะคนที่ทำครบทั้งก่อนและหลัง (เทียบคนเดียวกัน)
-  const pre = patients.flatMap((p) => (p.preTest ? [p.preTest.score] : []));
+  const pre = patients.flatMap((p) => { const r = baselinePre(p); return r ? [r.score] : []; });
   const post = patients.flatMap((p) => (p.postTest ? [p.postTest.score] : []));
-  const paired = patients.filter((p) => p.preTest && p.postTest);
-  const scoreTotal = Math.max(10, ...patients.flatMap((p) => [p.preTest?.total ?? 0, p.postTest?.total ?? 0]));
+  const paired = patients.filter((p) => baselinePre(p) && p.postTest);
+  const scoreTotal = Math.max(10, ...patients.flatMap((p) => [baselinePre(p)?.total ?? 0, p.postTest?.total ?? 0]));
   const scoreHistogram = Array.from({ length: scoreTotal + 1 }, (_, score) => ({
     score,
     pre: pre.filter((s) => s === score).length,
@@ -209,7 +225,7 @@ export function buildAnalytics({ patients, bp: logs, weights, kicks }: HealthDat
     preCount: pre.length,
     postCount: post.length,
     pairedCount: paired.length,
-    pairedGain: avg(paired.map((p) => p.postTest!.score - p.preTest!.score)),
+    pairedGain: avg(paired.map((p) => p.postTest!.score - baselinePre(p)!.score)),
     scoreTotal,
     scoreHistogram,
     assessedCount: riskLevels.low + riskLevels.medium + riskLevels.high,

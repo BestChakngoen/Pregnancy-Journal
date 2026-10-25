@@ -7,6 +7,7 @@ import { useUserStore } from "@/lib/userStore";
 import { useRouter } from "next/navigation";
 import EditProfileModal from "@/components/modals/EditProfileModal";
 import ChangePasswordModal from "@/components/modals/ChangePasswordModal";
+import NotificationModal from "@/components/modals/NotificationModal";
 import { useAlertStore } from "@/lib/alertStore";
 
 export default function ProfileSection() {
@@ -14,6 +15,7 @@ export default function ProfileSection() {
   const router = useRouter();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [isNotifyOpen, setIsNotifyOpen] = useState(false);
 
   const handleLogout = () => {
     useAlertStore.getState().showAlert({
@@ -40,6 +42,11 @@ export default function ProfileSection() {
       <ChangePasswordModal
         isOpen={isPasswordOpen}
         onClose={() => setIsPasswordOpen(false)}
+      />
+
+      <NotificationModal
+        isOpen={isNotifyOpen}
+        onClose={() => setIsNotifyOpen(false)}
       />
 
       {/* Header */}
@@ -96,7 +103,10 @@ export default function ProfileSection() {
             <ChevronRight className="w-5 h-5 text-slate-400/80 group-hover:text-slate-600 transition-colors group-hover:translate-x-1" />
           </button>
 
-          <button className="flex items-center justify-between p-4 bg-white/50 border border-white/60 rounded-2xl shadow-sm hover:bg-white/70 transition-all active:scale-[0.98] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2">
+          <button
+            onClick={() => setIsNotifyOpen(true)}
+            className="flex items-center justify-between p-4 bg-white/50 border border-white/60 rounded-2xl shadow-sm hover:bg-white/70 transition-all active:scale-[0.98] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+          >
             <div className="flex items-center gap-4">
               <div className="p-2.5 bg-amber-100/80 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
                 <BellRing className="w-5 h-5" />

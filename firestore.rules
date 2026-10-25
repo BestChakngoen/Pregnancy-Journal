@@ -30,8 +30,9 @@ service cloud.firestore {
         && a.at is string && a.at.size() <= 40;
     }
 
+    // ผลแบบประเมินแต่ละชุดเก็บ 2 ฟิลด์: <ชื่อ> = ครั้งล่าสุด (ทับได้), <ชื่อ>First = ครั้งแรก (เขียนครั้งเดียว ดู firstResultsKept)
     function validProfile(d) {
-      return d.keys().hasOnly(['name', 'age', 'gestationalWeeks', 'gravida', 'expectedDeliveryDate', 'createdAt', 'satisfaction', 'preTest', 'postTest', 'assessment'])
+      return d.keys().hasOnly(['name', 'age', 'gestationalWeeks', 'gravida', 'expectedDeliveryDate', 'createdAt', 'satisfaction', 'preTest', 'postTest', 'assessment', 'satisfactionFirst', 'preTestFirst', 'postTestFirst', 'assessmentFirst'])
         && optString(d, 'name', 100)
         && optString(d, 'age', 10)
         && optString(d, 'gestationalWeeks', 10)
@@ -41,7 +42,20 @@ service cloud.firestore {
         && (!('satisfaction' in d) || (d.satisfaction is map && d.satisfaction.size() <= 50))
         && (!('preTest' in d) || validScore(d.preTest))
         && (!('postTest' in d) || validScore(d.postTest))
-        && (!('assessment' in d) || validAssessment(d.assessment));
+        && (!('assessment' in d) || validAssessment(d.assessment))
+        && (!('satisfactionFirst' in d) || (d.satisfactionFirst is map && d.satisfactionFirst.size() <= 50))
+        && (!('preTestFirst' in d) || validScore(d.preTestFirst))
+        && (!('postTestFirst' in d) || validScore(d.postTestFirst))
+        && (!('assessmentFirst' in d) || validAssessment(d.assessmentFirst));
+    }
+
+    // "ครั้งแรก" เขียนได้ครั้งเดียว: ถ้ามีอยู่แล้ว ต้องไม่ถูกแก้หรือลบ (กันทับแม้บันทึกพร้อมกันจาก 2 เครื่อง)
+    function firstKept(old, d, key) {
+      return !(key in old) || (key in d && d[key] == old[key]);
+    }
+    function firstResultsKept(old, d) {
+      return firstKept(old, d, 'satisfactionFirst') && firstKept(old, d, 'preTestFirst')
+        && firstKept(old, d, 'postTestFirst') && firstKept(old, d, 'assessmentFirst');
     }
 
     function validBP(d) {
@@ -96,7 +110,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create, update: if isOwner(userId) && validProfile(request.resource.data);
+      allow create: if isOwner(userId) && validProfile(request.resource.data);
+      allow update: if isOwner(userId) && validProfile(request.resource.data) && firstResultsKept(resource.data, request.resource.data);
       allow delete: if false;
 
       match /bloodPressures/{logId} {

@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NOTIFY_STORAGE_KEY } from "@/lib/notificationPrefs";
 
 export interface UserProfile {
   name: string;
@@ -37,6 +38,7 @@ export function useUserStore() {
 
  const logout = () => {
  localStorage.removeItem("bumply_user");
+ localStorage.removeItem(NOTIFY_STORAGE_KEY); // ค่าแจ้งเตือนเป็นของผู้ใช้คนนี้ ไม่ให้ค้างเครื่องให้คนถัดไป
  localStorage.removeItem("bumply_tracking_data"); // ข้อมูลสุขภาพ: ไม่ให้ค้างเครื่องให้คนถัดไปเห็น
  import("@/lib/auth").then((m) => m.signOutUser()).catch(() => {});
  setUser(null);

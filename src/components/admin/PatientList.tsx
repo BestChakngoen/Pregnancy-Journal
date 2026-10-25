@@ -3,7 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { AlertOctagon, CheckCircle2, ChevronDown, Clock, CircleDashed, Search } from "lucide-react";
-import { CHART_COLORS, INACTIVE_DAYS, buildPatientRows, daysAgo, type HealthData, type PatientRow } from "@/lib/analytics";
+import { CHART_COLORS, INACTIVE_DAYS, baselinePre, buildPatientRows, daysAgo, type HealthData, type PatientDoc, type PatientRow, type ScoreResult } from "@/lib/analytics";
 import { ASSESSMENT_QUESTIONS, RISK_LABEL } from "@/lib/questions";
 import { Legend, TableView } from "@/components/admin/AdminAnalytics";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,27 @@ const shortDate = (t: string) => {
   const d = new Date(t);
   return `${d.getDate()}/${d.getMonth() + 1}`;
 };
+
+const scoreText = (r: ScoreResult) => `${r.score}/${r.total}`;
+const avgScore = (m: Record<string, number>) => {
+  const v = Object.values(m);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+};
+
+// ชุดที่ทำซ้ำ (ครั้งแรกต่างจากครั้งล่าสุด): แสดง "ครั้งแรก → ล่าสุด" ให้เห็นพัฒนาการ — ไม่ได้ทำซ้ำหรือยังไม่มีครั้งแรก = ไม่แสดง
+function retakes(p: PatientDoc): string[] {
+  const out: string[] = [];
+  if (p.preTestFirst && p.preTest && p.preTestFirst.at !== p.preTest.at) out.push(`Pre-test ${scoreText(p.preTestFirst)} → ${scoreText(p.preTest)}`);
+  if (p.postTestFirst && p.postTest && p.postTestFirst.at !== p.postTest.at) out.push(`Post-test ${scoreText(p.postTestFirst)} → ${scoreText(p.postTest)}`);
+  if (p.assessmentFirst && p.assessment && p.assessmentFirst.at !== p.assessment.at) {
+    out.push(`ประเมินความเสี่ยง ${RISK_LABEL[p.assessmentFirst.level]} → ${RISK_LABEL[p.assessment.level]}`);
+  }
+  if (p.satisfactionFirst && p.satisfaction && JSON.stringify(p.satisfactionFirst) !== JSON.stringify(p.satisfaction)) {
+    const [first, latest] = [avgScore(p.satisfactionFirst), avgScore(p.satisfaction)];
+    if (first !== null && latest !== null) out.push(`ความพึงพอใจ ${first.toFixed(1)} → ${latest.toFixed(1)}`);
+  }
+  return out;
+}
 
 const agoText = (days: number) => (days <= 0 ? "วันนี้" : days === 1 ? "เมื่อวาน" : `${days} วันก่อน`);
 
@@ -62,6 +83,8 @@ function PatientItem({ r, now }: { r: PatientRow; now: Date }) {
   const { p, latestBP } = r;
   const latestWeight = r.weights[r.weights.length - 1];
   const satisfaction = Object.values(p.satisfaction ?? {});
+  const pre = baselinePre(p); // ก่อนเรียน = Pre-test ครั้งแรก
+  const retake = retakes(p);
   const bpAgo = latestBP && agoText(daysAgo(latestBP.timestamp, now));
 
   // ข้อมูลประกอบ (ไม่ใช่สัญญาณเตือน) — ค่าที่เป็นสัญญาณเตือนอยู่ในชิปด้านบนแล้ว จึงไม่ซ้ำ
@@ -69,7 +92,7 @@ function PatientItem({ r, now }: { r: PatientRow; now: Date }) {
     latestBP && !r.bpHigh && `ความดันล่าสุด ${latestBP.systolic}/${latestBP.diastolic} (${bpAgo})`,
     p.assessment && !r.riskHigh && `ผลประเมิน: ${RISK_LABEL[p.assessment.level]}`,
     latestWeight && `น้ำหนัก ${latestWeight.kg} กก.`,
-    p.preTest && `ความรู้ ${p.preTest.score}${p.postTest ? ` → ${p.postTest.score}` : ""}/${p.preTest.total}`,
+    pre && `ความรู้ ${pre.score}${p.postTest ? ` → ${p.postTest.score}` : ""}/${pre.total}`,
   ].filter(Boolean);
 
   return (
@@ -123,6 +146,12 @@ function PatientItem({ r, now }: { r: PatientRow; now: Date }) {
             <p>
               <span className="font-semibold text-slate-700">ความพึงพอใจเฉลี่ย: </span>
               {(satisfaction.reduce((a, b) => a + b, 0) / satisfaction.length).toFixed(1)} / 5
+            </p>
+          )}
+          {retake.length > 0 && (
+            <p>
+              <span className="font-semibold text-slate-700">ทำซ้ำ (ครั้งแรก → ล่าสุด): </span>
+              {retake.join(" · ")}
             </p>
           )}
 

@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "../css/charts.css";
+@import "../css/scroller.css";
 
 :root {
   --background: #fdfbfb;

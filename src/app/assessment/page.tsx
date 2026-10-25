@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 import FloatingParticles from "@/components/ui/FloatingParticles";
 import { ASSESSMENT_QUESTIONS as QUESTIONS, riskLevelOf } from "@/lib/questions";
-import { saveToMyProfile } from "@/lib/firebase";
+import { saveResult } from "@/lib/saveResult";
 
 
 export default function Assessment() {
@@ -43,8 +43,8 @@ export default function Assessment() {
       } else {
         const factors = QUESTIONS.filter((q) => nextAnswers[q.id]).map((q) => q.id);
         const totalRisk = QUESTIONS.reduce((sum, q) => sum + (nextAnswers[q.id] ? q.riskScore : 0), 0);
-        // ส่งให้หน้า admin วิเคราะห์ (เก็บผลล่าสุด) — บันทึกไม่ได้ก็ยังแสดงผลให้ผู้ใช้ตามปกติ
-        saveToMyProfile({ assessment: { totalRisk, level: riskLevelOf(totalRisk), factors, at: new Date().toISOString() } })
+        // ส่งให้หน้า admin วิเคราะห์ (เก็บครั้งแรก + ครั้งล่าสุด) — บันทึกไม่ได้ก็ยังแสดงผลให้ผู้ใช้ตามปกติ
+        saveResult("assessment", { totalRisk, level: riskLevelOf(totalRisk), factors, at: new Date().toISOString() })
           .catch((err) => console.error("Error saving assessment:", err));
         setIsFinished(true);
       }
