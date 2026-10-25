@@ -85,6 +85,64 @@ export function latestBPByPatient(logs: BPLogDoc[]) {
 export const isHighRiskPatient = (p: PatientDoc, latestBP?: BPLogDoc) =>
   p.assessment?.level === "high" || latestBP?.isHighRisk === true;
 
+const DAY = 86_400_000;
+export const INACTIVE_DAYS = 7;
+
+// จำนวนวันตามปฏิทิน (เวลาเครื่อง) จาก t ถึง now: 0 = วันนี้, 1 = เมื่อวาน
+export const daysAgo = (t: Date | string, now = new Date()) => {
+  const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((start(now) - start(new Date(t))) / DAY);
+};
+
+// แยกบันทึกตามคน เรียงเก่า → ใหม่ (ISO timestamp / YYYY-MM-DD เทียบแบบ string ได้)
+function groupByPatient<T extends { uid: string }>(xs: T[], key: (x: T) => string) {
+  const byPatient = new Map<string, T[]>();
+  for (const x of [...xs].sort((a, b) => key(a).localeCompare(key(b)))) {
+    byPatient.set(x.uid, [...(byPatient.get(x.uid) ?? []), x]);
+  }
+  return byPatient;
+}
+
+export interface PatientRow {
+  p: PatientDoc;
+  bp: BPLogDoc[]; // เรียงเก่า → ใหม่
+  weights: WeightLogDoc[];
+  kicks: KickDayDoc[];
+  latestBP?: BPLogDoc;
+  bpHigh: boolean;
+  riskHigh: boolean;
+  everLogged: boolean;
+  daysSinceLog: number | null; // นับจากบันทึกล่าสุด หรือวันสมัครถ้ายังไม่เคยบันทึก
+  inactive: boolean;
+  severity: number; // 0 = ไม่มีสัญญาณที่ต้องติดตาม
+}
+
+// รายชื่อสำหรับคัดกรอง: ความดันล่าสุดสูง > ประเมินเสี่ยงสูง > ไม่บันทึกนาน แล้วเรียงตามความดันที่วัดล่าสุด
+export function buildPatientRows({ patients, bp, weights, kicks }: HealthData, now = new Date()): PatientRow[] {
+  const bpBy = groupByPatient(bp, (l) => l.timestamp);
+  const weightBy = groupByPatient(weights, (w) => w.timestamp);
+  const kickBy = groupByPatient(kicks.filter((k) => k.count > 0), (k) => k.date);
+
+  return patients
+    .map((p) => {
+      const b = bpBy.get(p.id) ?? [];
+      const w = weightBy.get(p.id) ?? [];
+      const k = kickBy.get(p.id) ?? [];
+      const latestBP = b[b.length - 1];
+      const logTimes = [latestBP?.timestamp, w[w.length - 1]?.timestamp, k[k.length - 1] && `${k[k.length - 1].date}T00:00:00`]
+        .filter((t): t is string => !!t)
+        .map((t) => new Date(t).getTime());
+      const last = logTimes.length ? new Date(Math.max(...logTimes)) : p.createdAt;
+      const daysSinceLog = last ? daysAgo(last, now) : null;
+      const bpHigh = latestBP?.isHighRisk === true;
+      const riskHigh = p.assessment?.level === "high";
+      const inactive = daysSinceLog !== null && daysSinceLog >= INACTIVE_DAYS;
+      const severity = (bpHigh ? 4 : 0) + (riskHigh ? 2 : 0) + (inactive ? 1 : 0);
+      return { p, bp: b, weights: w, kicks: k, latestBP, bpHigh, riskHigh, everLogged: logTimes.length > 0, daysSinceLog, inactive, severity };
+    })
+    .sort((a, b) => b.severity - a.severity || (b.latestBP?.timestamp ?? "").localeCompare(a.latestBP?.timestamp ?? ""));
+}
+
 export function buildAnalytics({ patients, bp: logs, weights, kicks }: HealthData, now = new Date(), days = 30) {
   const latest = latestBPByPatient(logs);
 

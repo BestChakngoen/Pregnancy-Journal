@@ -68,7 +68,7 @@
 | `/pre-test`, `/post-test` | wrapper → `Quiz` | บันทึกครั้งล่าสุดลง `users/{uid}.preTest` / `.postTest` `{score, total, at}` |
 | `/satisfaction` | `satisfaction/page.tsx` | บันทึก `satisfaction` ลง `users/{uid}` (merge) |
 | `/profile` | `profile/page.tsx` | redirect → `/#profile` (เนื้อหาอยู่ที่ `sections/ProfileSection.tsx`) |
-| `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง |
+| `/admin` | `admin/page.tsx` | ไม่มี link จากเมนู ต้องพิมพ์ URL เอง · **ดูแบบตัวอย่าง** `/admin?demo=1` = ผู้ป่วยสมมติ 20 คน + ผู้ดูแลสมมติ 5 คน ไม่ต้องล็อกอิน ไม่แตะ Firebase (ข้อมูลอยู่ที่ `src/lib/demoData.ts`) |
 
 หน้าที่ซ่อม BottomNav: `/login /onboarding /assessment /pre-test /post-test /satisfaction /admin /education/ebook` (แก้ใน `hiddenPaths`; `/videos` **ไม่ได้อยู่ในรายการ** จึงมีเมนูล่างแสดงอยู่)
 

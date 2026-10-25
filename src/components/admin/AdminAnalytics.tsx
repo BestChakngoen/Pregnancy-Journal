@@ -59,7 +59,7 @@ function HBar({ label, value, max, display, color, icon }: { label: string; valu
   );
 }
 
-function Legend({ items }: { items: { label: string; color: string; shape: "rect" | "line" }[] }) {
+export function Legend({ items }: { items: { label: string; color: string; shape: "rect" | "line" }[] }) {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
       {items.map((i) => (
@@ -72,9 +72,9 @@ function Legend({ items }: { items: { label: string; color: string; shape: "rect
   );
 }
 
-function TableView({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
+export function TableView({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
   return (
-    <details className="text-xs text-slate-600">
+    <details className="text-xs text-slate-600 print:hidden">
       <summary className="cursor-pointer select-none min-h-[44px] flex items-center">ดูเป็นตาราง</summary>
       <table className="w-full tabular-nums">
         <thead>
@@ -94,22 +94,18 @@ function TableView({ head, rows }: { head: string[]; rows: (string | number)[][]
   );
 }
 
-const Empty = ({ children }: { children: React.ReactNode }) => <p className="text-xs text-slate-400 py-6 text-center">{children}</p>;
+const Empty = ({ children }: { children: React.ReactNode }) => <p className="text-xs text-slate-500 py-6 text-center">{children}</p>;
 
 export default function AdminAnalytics({ a }: { a: Analytics }) {
   const gain = a.pairedGain;
-  const maxFactor = Math.max(0, ...a.factorCounts.values());
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-start">
       {/* KPI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:col-span-2">
-        <Tile label="ผู้ป่วยทั้งหมด" value={String(a.patientCount)} caption="กรอกข้อมูลส่วนตัวแล้ว" />
-        <Tile
-          label={<><AlertOctagon className="w-3.5 h-3.5" style={{ color: CHART_COLORS.critical }} aria-hidden="true" /> ความเสี่ยงสูง</>}
-          value={String(a.highRiskCount)}
-          caption="ประเมินเสี่ยงสูง หรือความดันล่าสุด ≥140/90"
-        />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:col-span-2">
+        <div className="col-span-2 md:col-span-1 grid">
+          <Tile label="ผู้ป่วยทั้งหมด" value={String(a.patientCount)} caption="กรอกข้อมูลส่วนตัวแล้ว" />
+        </div>
         <Tile label="คะแนนความรู้เฉลี่ย" value={`${fmt(a.preAvg)} → ${fmt(a.postAvg)}`} caption={`ก่อน → หลังเรียน (เต็ม ${a.scoreTotal})`}>
           {gain !== null && (
             <span className="text-xs font-semibold mt-1" style={{ color: gain >= 0 ? CHART_COLORS.gainText : CHART_COLORS.critical }}>
@@ -151,11 +147,11 @@ export default function AdminAnalytics({ a }: { a: Analytics }) {
                 );
               })}
             </ul>
-            <h4 className="text-xs font-semibold text-slate-600 mt-2">ปัจจัยเสี่ยงที่พบ</h4>
+            <h4 className="text-xs font-semibold text-slate-600 mt-2">ปัจจัยเสี่ยงที่พบ (จากผู้ที่ประเมินแล้ว)</h4>
             <ul className="flex flex-col gap-3">
               {ASSESSMENT_QUESTIONS.map((q) => {
                 const n = a.factorCounts.get(q.id) ?? 0;
-                return <HBar key={q.id} label={q.title} value={n} max={maxFactor} color={CHART_COLORS.post} display={`${n} คน`} />;
+                return <HBar key={q.id} label={q.title} value={n} max={a.assessedCount} color={CHART_COLORS.post} display={`${n} คน (${Math.round((n / a.assessedCount) * 100)}%)`} />;
               })}
             </ul>
           </>

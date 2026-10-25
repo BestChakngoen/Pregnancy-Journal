@@ -30,7 +30,7 @@ export default function ProfileSection() {
   };
 
   return (
-    <div className="pb-28 pt-8 px-6 md:px-10 md:pt-12 min-h-svh flex flex-col relative overflow-hidden md:bg-transparent">
+    <div className="pb-8 pt-8 px-6 md:px-10 md:pt-12 flex flex-col relative overflow-hidden md:bg-transparent">
       
       <EditProfileModal 
         isOpen={isEditModalOpen} 

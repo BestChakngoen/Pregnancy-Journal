@@ -110,30 +110,30 @@ export default function Login() {
     }
   };
 
-  const inputClasses = "w-full p-4 bg-white/60 backdrop-blur-sm rounded-2xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-sm";
-  const labelClasses = "block text-sm font-semibold text-slate-700/90 mb-2 ml-1 flex items-center gap-2";
+  const inputClasses = "w-full p-4 short:p-3 bg-white/60 backdrop-blur-sm rounded-2xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-sm";
+  const labelClasses = "block text-sm font-semibold text-slate-700/90 mb-2 short:mb-1.5 ml-1 flex items-center gap-2";
 
   return (
-    <div className="min-h-svh flex flex-col justify-center py-12 px-6 relative w-full max-w-md mx-auto">
+    <div className="min-h-svh flex flex-col justify-center py-8 short:py-4 px-6 relative overflow-hidden w-full max-w-md mx-auto">
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/40 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-200/40 rounded-full blur-3xl -z-10 -translate-x-1/3 translate-y-1/3" />
 
       <motion.header
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mb-8"
+        className="mb-8 short:mb-4"
       >
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tight text-balance">
+        <h1 className="text-3xl short:text-2xl font-bold text-slate-800 tracking-tight text-balance">
           {isRegister ? "สมัครใช้งาน MomSafe" : "เข้าสู่ระบบ MomSafe"}
         </h1>
-        <p className="text-slate-500 mt-2">
+        <p className="text-slate-500 mt-2 short:mt-1 short:text-sm">
           {isRegister
             ? "ตั้งชื่อและรหัสผ่านสำหรับเข้าใช้งานครั้งต่อไป"
             : "ใส่ชื่อและรหัสผ่านที่เคยตั้งไว้"}
         </p>
       </motion.header>
 
-      <div className="grid grid-cols-2 gap-1 p-1 bg-white/50 rounded-2xl mb-6" role="tablist">
+      <div className="grid grid-cols-2 gap-1 p-1 bg-white/50 rounded-2xl mb-6 short:mb-4" role="tablist">
         {(["login", "register"] as const).map((m) => (
           <button
             key={m}
@@ -142,7 +142,7 @@ export default function Login() {
             aria-selected={mode === m}
             onClick={() => { setMode(m); setError(""); }}
             className={cn(
-              "py-3 rounded-xl text-sm font-semibold transition-all",
+              "py-3 short:py-2.5 rounded-xl text-sm font-semibold transition-all",
               mode === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
@@ -156,7 +156,7 @@ export default function Login() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.1 }}
         onSubmit={handleSubmit}
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-5 short:gap-3"
       >
         <div>
           <label htmlFor="name" className={labelClasses}>
@@ -210,7 +210,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+          className="w-full flex items-center justify-center gap-2 py-4 short:py-3 bg-slate-800 text-white rounded-2xl font-semibold shadow-xl shadow-slate-800/20 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
         >
           {isLoading ? (
             <>

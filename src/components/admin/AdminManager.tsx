@@ -16,9 +16,10 @@ interface AdminDoc {
 const UID_PATTERN = /^[A-Za-z0-9]{20,128}$/;
 
 // สิทธิ์จริงตรวจโดย firestore.rules (match /admins) — ที่นี่แค่เช็คก่อนเพื่อแสดงข้อความ
-export default function AdminManager({ myUid }: { myUid: string }) {
-  const [admins, setAdmins] = useState<AdminDoc[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+// demoAdmins = โหมดตัวอย่าง: ใช้รายชื่อนี้แทน Firestore และเพิ่ม/ถอนได้เฉพาะในหน้า (รีเฟรชแล้วกลับเหมือนเดิม)
+export default function AdminManager({ myUid, demoAdmins }: { myUid: string; demoAdmins?: AdminDoc[] }) {
+  const [admins, setAdmins] = useState<AdminDoc[]>(demoAdmins ?? []);
+  const [isLoading, setIsLoading] = useState(!demoAdmins);
   const [uid, setUid] = useState("");
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -41,7 +42,7 @@ export default function AdminManager({ myUid }: { myUid: string }) {
       .finally(() => setIsLoading(false));
 
   useEffect(() => {
-    fetchAdmins();
+    if (!demoAdmins) fetchAdmins();
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -54,6 +55,14 @@ export default function AdminManager({ myUid }: { myUid: string }) {
     }
     if (admins.some((a) => a.id === newUid)) {
       showAlert({ type: "info", title: "เป็นผู้ดูแลอยู่แล้ว", message: "บัญชีนี้มีสิทธิ์ผู้ดูแลอยู่แล้ว" });
+      return;
+    }
+
+    if (demoAdmins) {
+      setAdmins([...admins, { id: newUid, name: newName }]);
+      setUid("");
+      setName("");
+      showAlert({ type: "success", title: "เพิ่มผู้ดูแลแล้ว (โหมดตัวอย่าง)", message: "ยังไม่ได้บันทึกลงระบบจริง รีเฟรชหน้าแล้วรายการจะกลับเป็นเหมือนเดิม" });
       return;
     }
 
@@ -80,6 +89,10 @@ export default function AdminManager({ myUid }: { myUid: string }) {
       confirmText: "ถอนสิทธิ์",
       showCancelButton: true,
       onConfirm: async () => {
+        if (demoAdmins) {
+          setAdmins((xs) => xs.filter((a) => a.id !== target.id));
+          return;
+        }
         try {
           await deleteDoc(doc(db, "admins", target.id));
           await fetchAdmins();
@@ -100,7 +113,7 @@ export default function AdminManager({ myUid }: { myUid: string }) {
       </h2>
 
       {isLoading ? (
-        <Loader2 className="w-5 h-5 text-slate-400 animate-spin self-center" />
+        <Loader2 className="w-5 h-5 text-slate-500 animate-spin self-center" aria-label="กำลังโหลด" />
       ) : (
         <ul className="flex flex-col divide-y divide-slate-100">
           {admins.map((a) => (
@@ -109,7 +122,7 @@ export default function AdminManager({ myUid }: { myUid: string }) {
                 <p className="text-sm font-semibold text-slate-800 truncate">
                   {a.name || "(ไม่มีชื่อ)"} {a.id === myUid && <span className="text-xs font-normal text-slate-500">(คุณ)</span>}
                 </p>
-                <p className="text-xs text-slate-400 truncate">{a.id}</p>
+                <p className="text-xs text-slate-500 truncate">{a.id}</p>
               </div>
               {a.id !== myUid && (
                 <button

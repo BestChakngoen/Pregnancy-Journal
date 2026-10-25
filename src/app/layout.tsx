@@ -49,8 +49,8 @@ export default function RootLayout({
         <div className="flex-1 w-full max-w-md md:max-w-7xl phone-landscape:max-w-4xl mx-auto bg-white/30 isolate min-h-svh shadow-sm relative transition-all duration-300 flex flex-col" data-main>
           
           {/* Full-width mesh background */}
-          <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent opacity-80" />
-          <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-transparent opacity-80 animate-blob" />
+          <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 print:hidden bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent opacity-80" />
+          <div className="fixed inset-0 w-full pointer-events-none overflow-hidden -z-10 print:hidden bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-transparent opacity-80 animate-blob" />
           
           <div className="flex-1 w-full flex flex-col">
             {children}

@@ -61,8 +61,37 @@ body::before {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* ปิดการดึงรีเฟรช/เด้งยืดตอนเลื่อนสุดขอบ ซึ่งทำให้หน้ากระตุก */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 html {
   scroll-behavior: smooth;
+}
+
+/* หน้า admin เป็นงานของเจ้าหน้าที่: ไม่ใช้กรอบแคบ+เงาของแอปคุณแม่ (ซ้อนเป็นการ์ดในการ์ด และทำให้พิมพ์ออกมากว้างแค่ 448px) */
+body:has([data-admin]) [data-main] {
+  max-width: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+@media print {
+  /* พิมพ์สีพื้น (แถบกราฟ, ชิปสถานะ) ตามจริง แม้เบราว์เซอร์ปิด "กราฟิกพื้นหลัง" ไว้ */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body::before {
+    display: none;
+  }
+}
+
+/* ล็อคพื้นหลังไม่ให้เลื่อนขณะ modal ที่ติด data-scroll-lock เปิดอยู่ */
+html:has([data-scroll-lock]) {
+  overflow: hidden;
 }
 
 /* จอคอม: เว้นที่ให้แถบเมนูข้าง (กว้าง 16rem) เฉพาะหน้าที่มีเมนู — หน้าแบบทดสอบ/login/admin ซ่อนเมนู จึงไม่ต้องเว้น

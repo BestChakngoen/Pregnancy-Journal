@@ -1,82 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { ChevronDown } from "lucide-react";
-import { CHART_COLORS, type BPLogDoc, type HealthData, type KickDayDoc, type PatientDoc, type WeightLogDoc } from "@/lib/analytics";
+import { AlertOctagon, CheckCircle2, ChevronDown, Clock, CircleDashed, Search } from "lucide-react";
+import { CHART_COLORS, INACTIVE_DAYS, buildPatientRows, daysAgo, type HealthData, type PatientRow } from "@/lib/analytics";
 import { ASSESSMENT_QUESTIONS, RISK_LABEL } from "@/lib/questions";
-import { RISK_STATUS } from "@/components/admin/AdminAnalytics";
+import { Legend, TableView } from "@/components/admin/AdminAnalytics";
 import { cn } from "@/lib/utils";
 
-// ใช้กราฟเดียวกับหน้าประวัติสุขภาพของคุณแม่
-const charts = () => import("@/components/charts/HistoryCharts");
-// next/dynamic ต้องเขียน options ตรงๆ (ใช้ตัวแปรไม่ได้)
-const BPChart = dynamic(() => charts().then((m) => m.BPChart), { ssr: false, loading: () => <div className="h-full" /> });
-const WeightChart = dynamic(() => charts().then((m) => m.WeightChart), { ssr: false, loading: () => <div className="h-full" /> });
-const KicksChart = dynamic(() => charts().then((m) => m.KicksChart), { ssr: false, loading: () => <div className="h-full" /> });
+// กราฟชุดเดียวกับภาพรวม (โหลดแยกผ่าน next/dynamic) — กล่องสูงคงที่ จึงไม่กระโดดตอนโหลด
+const charts = () => import("@/components/charts/AdminCharts");
+const PatientBPChart = dynamic(() => charts().then((m) => m.PatientBPChart), { ssr: false, loading: () => <div className="h-[200px]" /> });
+const PatientWeightChart = dynamic(() => charts().then((m) => m.PatientWeightChart), { ssr: false, loading: () => <div className="h-[180px]" /> });
+const PatientKicksChart = dynamic(() => charts().then((m) => m.PatientKicksChart), { ssr: false, loading: () => <div className="h-[180px]" /> });
 
-const shortDate = (iso: string) => {
-  const d = new Date(iso);
+const shortDate = (t: string) => {
+  const d = new Date(t);
   return `${d.getDate()}/${d.getMonth() + 1}`;
 };
 
+const agoText = (days: number) => (days <= 0 ? "วันนี้" : days === 1 ? "เมื่อวาน" : `${days} วันก่อน`);
+
+type FilterId = "all" | "followUp" | "high" | "inactive" | "notAssessed";
+const FILTERS: { id: FilterId; label: string; match: (r: PatientRow) => boolean }[] = [
+  { id: "all", label: "ทั้งหมด", match: () => true },
+  { id: "followUp", label: "ต้องติดตาม", match: (r) => r.severity > 0 },
+  { id: "high", label: "เสี่ยงสูง", match: (r) => r.bpHigh || r.riskHigh },
+  { id: "inactive", label: `ไม่บันทึก ${INACTIVE_DAYS} วันขึ้นไป`, match: (r) => r.inactive },
+  { id: "notAssessed", label: "ยังไม่ประเมิน", match: (r) => !r.p.assessment },
+];
+
+// ชิปสถานะ: ข้อความ + ไอคอนเสมอ สีเป็นแค่ตัวช่วย (พิมพ์ขาวดำก็ยังอ่านออก)
+const TONES = {
+  critical: "bg-red-50 text-red-800",
+  warning: "bg-amber-50 text-amber-900",
+  neutral: "bg-slate-100 text-slate-700",
+  good: "bg-emerald-50 text-emerald-800",
+};
+
+function StatusChip({ tone, icon: Icon, children }: { tone: keyof typeof TONES; icon: typeof Clock; children: React.ReactNode }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold tabular-nums", TONES[tone])}>
+      <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
 function Detail({ title, empty, children }: { title: string; empty: boolean; children: React.ReactNode }) {
   return (
-    <div>
-      <p className="font-semibold text-slate-700 mb-2">{title}</p>
-      {empty ? <p className="text-slate-400">ยังไม่มีการบันทึก</p> : <div className="h-[200px] w-full -ml-4">{children}</div>}
+    <div className="flex flex-col gap-2">
+      <p className="font-semibold text-slate-700">{title}</p>
+      {empty ? <p className="text-slate-500">ยังไม่มีการบันทึก</p> : children}
     </div>
   );
 }
 
-const Chip = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-lg text-xs text-slate-700 tabular-nums">{children}</span>
-);
-
-function PatientCard({ p, logs, weights, kicks }: { p: PatientDoc; logs: BPLogDoc[]; weights: WeightLogDoc[]; kicks: KickDayDoc[] }) {
+function PatientItem({ r, now }: { r: PatientRow; now: Date }) {
   const [open, setOpen] = useState(false);
-  const latest = logs[logs.length - 1];
-  const latestWeight = weights[weights.length - 1];
-  const risk = p.assessment && RISK_STATUS[p.assessment.level];
+  const panelId = useId();
+  const { p, latestBP } = r;
+  const latestWeight = r.weights[r.weights.length - 1];
   const satisfaction = Object.values(p.satisfaction ?? {});
+  const bpAgo = latestBP && agoText(daysAgo(latestBP.timestamp, now));
+
+  // ข้อมูลประกอบ (ไม่ใช่สัญญาณเตือน) — ค่าที่เป็นสัญญาณเตือนอยู่ในชิปด้านบนแล้ว จึงไม่ซ้ำ
+  const facts = [
+    latestBP && !r.bpHigh && `ความดันล่าสุด ${latestBP.systolic}/${latestBP.diastolic} (${bpAgo})`,
+    p.assessment && !r.riskHigh && `ผลประเมิน: ${RISK_LABEL[p.assessment.level]}`,
+    latestWeight && `น้ำหนัก ${latestWeight.kg} กก.`,
+    p.preTest && `ความรู้ ${p.preTest.score}${p.postTest ? ` → ${p.postTest.score}` : ""}/${p.preTest.total}`,
+  ].filter(Boolean);
 
   return (
-    <li className="bg-white rounded-2xl shadow-sm border border-slate-100 break-inside-avoid">
-      <button onClick={() => setOpen(!open)} aria-expanded={open} className="w-full p-4 flex flex-col gap-2 text-left">
-        <div className="w-full flex justify-between items-start gap-2">
-          <div className="min-w-0">
-            <h3 className="font-bold text-slate-800 text-lg truncate">แม่{p.name}</h3>
-            <p className="text-xs text-slate-500">อายุ {p.age} ปี • ครรภ์ที่ {p.gravida}</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs font-bold rounded-lg">{p.gestationalWeeks} Wk</span>
-            <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform print:hidden", open && "rotate-180")} aria-hidden="true" />
-          </div>
+    <li className="py-4 break-inside-avoid">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-slate-900 break-words">แม่{p.name}</h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            อายุ {p.age} ปี · ครรภ์ที่ {p.gravida} · อายุครรภ์ {p.gestationalWeeks} สัปดาห์ (ตามที่กรอก)
+          </p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip>ก่อนเรียน {p.preTest ? `${p.preTest.score}/${p.preTest.total}` : "–"}</Chip>
-          <Chip>หลังเรียน {p.postTest ? `${p.postTest.score}/${p.postTest.total}` : "–"}</Chip>
-          <Chip>
-            {risk ? (
-              <>
-                <risk.Icon className="w-3.5 h-3.5" style={{ color: risk.color }} aria-hidden="true" />
-                {RISK_LABEL[p.assessment!.level]}
-              </>
-            ) : "ยังไม่ประเมินความเสี่ยง"}
-          </Chip>
-          {latest && (
-            <Chip>
-              {latest.isHighRisk && <span className="w-2 h-2 rounded-full" style={{ background: CHART_COLORS.critical }} aria-hidden="true" />}
-              ความดันล่าสุด {latest.systolic}/{latest.diastolic}
-              {latest.isHighRisk && <span className="sr-only">(สูงกว่าเกณฑ์)</span>}
-            </Chip>
-          )}
-          {latestWeight && <Chip>น้ำหนักล่าสุด {latestWeight.kg} กก.</Chip>}
-        </div>
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="shrink-0 -mr-2 min-h-[44px] px-3 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 flex items-center gap-1 print:hidden"
+        >
+          {open ? "ซ่อน" : "รายละเอียด"}
+          <ChevronDown className={cn("w-4 h-4 transition-transform", open && "rotate-180")} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {r.bpHigh && latestBP && (
+          <StatusChip tone="critical" icon={AlertOctagon}>
+            ความดันสูง {latestBP.systolic}/{latestBP.diastolic} · {bpAgo}
+          </StatusChip>
+        )}
+        {r.riskHigh && <StatusChip tone="critical" icon={AlertOctagon}>ผลประเมินเสี่ยงสูง</StatusChip>}
+        {r.inactive && (
+          <StatusChip tone="warning" icon={Clock}>
+            {r.everLogged ? `ไม่บันทึกมา ${r.daysSinceLog} วัน` : `ยังไม่เคยบันทึกสุขภาพ (สมัคร ${r.daysSinceLog} วันก่อน)`}
+          </StatusChip>
+        )}
+        {!p.assessment && <StatusChip tone="neutral" icon={CircleDashed}>ยังไม่ประเมินความเสี่ยง</StatusChip>}
+        {r.severity === 0 && <StatusChip tone="good" icon={CheckCircle2}>ไม่มีสัญญาณที่ต้องติดตาม</StatusChip>}
+      </div>
+
+      {facts.length > 0 && <p className="mt-2 text-xs text-slate-600 tabular-nums">{facts.join(" · ")}</p>}
 
       {open && (
-        <div className="px-4 pb-4 flex flex-col gap-3 border-t border-slate-100 pt-3 text-xs text-slate-600">
+        <div id={panelId} className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-4 text-xs text-slate-600">
           {p.assessment && p.assessment.factors.length > 0 && (
             <p>
               <span className="font-semibold text-slate-700">ปัจจัยเสี่ยง: </span>
@@ -89,41 +125,105 @@ function PatientCard({ p, logs, weights, kicks }: { p: PatientDoc; logs: BPLogDo
               {(satisfaction.reduce((a, b) => a + b, 0) / satisfaction.length).toFixed(1)} / 5
             </p>
           )}
-          <Detail title={`ความดันโลหิต (${logs.length} ครั้ง${logs.length > 30 ? " · แสดง 30 ครั้งล่าสุด" : ""})`} empty={logs.length === 0}>
-            <BPChart data={logs.slice(-30).map((l) => ({ ...l, displayDate: shortDate(l.timestamp) }))} />
-          </Detail>
-          <Detail title={`น้ำหนัก (${weights.length} ครั้ง${weights.length > 30 ? " · แสดง 30 ครั้งล่าสุด" : ""})`} empty={weights.length === 0}>
-            <WeightChart data={weights.slice(-30).map((w) => ({ date: shortDate(w.timestamp), kg: w.kg }))} />
-          </Detail>
-          <Detail title="ลูกดิ้นต่อวัน (14 วันล่าสุดที่บันทึก)" empty={kicks.length === 0}>
-            <KicksChart data={kicks.slice(-14).map((k) => ({ date: shortDate(`${k.date}T00:00:00`), count: k.count }))} />
-          </Detail>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <Detail title={`ความดันโลหิต (${r.bp.length} ครั้ง${r.bp.length > 30 ? " · 30 ครั้งล่าสุด" : ""})`} empty={r.bp.length === 0}>
+              <Legend items={[
+                { label: "ตัวบน (SYS)", color: CHART_COLORS.systolic, shape: "line" },
+                { label: "ตัวล่าง (DIA)", color: CHART_COLORS.diastolic, shape: "line" },
+              ]} />
+              <PatientBPChart data={r.bp.slice(-30).map((l) => ({ label: shortDate(l.timestamp), systolic: l.systolic, diastolic: l.diastolic }))} />
+              <TableView head={["วันที่", "SYS", "DIA"]} rows={r.bp.slice(-30).reverse().map((l) => [shortDate(l.timestamp), l.systolic, l.diastolic])} />
+            </Detail>
+            <Detail title={`น้ำหนัก (${r.weights.length} ครั้ง${r.weights.length > 30 ? " · 30 ครั้งล่าสุด" : ""})`} empty={r.weights.length === 0}>
+              <PatientWeightChart data={r.weights.slice(-30).map((w) => ({ label: shortDate(w.timestamp), kg: w.kg }))} />
+              <TableView head={["วันที่", "กก."]} rows={r.weights.slice(-30).reverse().map((w) => [shortDate(w.timestamp), w.kg])} />
+            </Detail>
+            <Detail title="ลูกดิ้นต่อวัน (14 วันล่าสุดที่บันทึก · เส้นประ = 10 ครั้ง)" empty={r.kicks.length === 0}>
+              <PatientKicksChart data={r.kicks.slice(-14).map((k) => ({ label: shortDate(`${k.date}T00:00:00`), count: k.count }))} />
+              <TableView head={["วันที่", "ครั้ง"]} rows={r.kicks.slice(-14).reverse().map((k) => [shortDate(`${k.date}T00:00:00`), k.count])} />
+            </Detail>
+          </div>
         </div>
       )}
     </li>
   );
 }
 
-// แยกบันทึกตามคน เรียงเก่า → ใหม่ (ISO timestamp / YYYY-MM-DD เทียบแบบ string ได้)
-function groupByPatient<T extends { uid: string }>(xs: T[], key: (x: T) => string) {
-  const byPatient = new Map<string, T[]>();
-  for (const x of [...xs].sort((a, b) => key(a).localeCompare(key(b)))) {
-    byPatient.set(x.uid, [...(byPatient.get(x.uid) ?? []), x]);
-  }
-  return byPatient;
+function Group({ title, rows, now }: { title?: string; rows: PatientRow[]; now: Date }) {
+  if (rows.length === 0) return null;
+  return (
+    <section className="bg-white rounded-2xl border border-slate-200/70 px-4 md:px-5">
+      {title && <h2 className="pt-4 text-sm font-semibold text-slate-700">{title} <span className="text-slate-500 font-normal tabular-nums">· {rows.length} คน</span></h2>}
+      <ul className="divide-y divide-slate-100">
+        {rows.map((r) => <PatientItem key={r.p.id} r={r} now={now} />)}
+      </ul>
+    </section>
+  );
 }
 
-export default function PatientList({ data }: { data: HealthData }) {
-  const bp = groupByPatient(data.bp, (l) => l.timestamp);
-  const weights = groupByPatient(data.weights, (w) => w.timestamp);
-  const kicks = groupByPatient(data.kicks, (k) => k.date);
+export default function PatientList({ data, now }: { data: HealthData; now: Date }) {
+  const rows = useMemo(() => buildPatientRows(data, now), [data, now]);
+  const [filter, setFilter] = useState<FilterId>("all");
+  const [query, setQuery] = useState("");
 
-  if (data.patients.length === 0) return <p className="text-center text-slate-500 py-8 text-sm">ยังไม่มีข้อมูลผู้ป่วย</p>;
+  if (rows.length === 0) return <p className="text-center text-slate-500 py-8 text-sm">ยังไม่มีผู้ป่วยในระบบ</p>;
+
+  const q = query.trim().toLowerCase();
+  const active = FILTERS.find((f) => f.id === filter)!;
+  const shown = rows.filter((r) => active.match(r) && (!q || (r.p.name ?? "").toLowerCase().includes(q)));
+  const needs = shown.filter((r) => r.severity > 0);
+
   return (
-    <ul className="flex flex-col gap-3">
-      {data.patients.map((p) => (
-        <PatientCard key={p.id} p={p} logs={bp.get(p.id) ?? []} weights={weights.get(p.id) ?? []} kicks={kicks.get(p.id) ?? []} />
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 print:hidden">
+        <label className="relative">
+          <span className="sr-only">ค้นหาชื่อคุณแม่</span>
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ค้นหาชื่อคุณแม่"
+            className="w-full md:max-w-sm min-h-[44px] pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-800"
+          />
+        </label>
+        <div role="group" aria-label="กรองรายชื่อ" className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => {
+            const n = rows.filter(f.match).length;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={filter === f.id}
+                onClick={() => setFilter(f.id)}
+                className={cn(
+                  "min-h-[40px] px-3 rounded-full text-sm font-semibold border transition-colors tabular-nums",
+                  filter === f.id ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-700 border-slate-200 hover:border-slate-400"
+                )}
+              >
+                {f.label} <span className={filter === f.id ? "text-white/80" : "text-slate-500"}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* หัวข้อเฉพาะตอนพิมพ์: บอกว่ารายการนี้กรองอะไรไว้ */}
+      <p className="hidden print:block text-sm text-slate-700">
+        รายชื่อ: {active.label}{q && ` · ค้นหา "${query.trim()}"`} · {shown.length} คน
+      </p>
+
+      {shown.length === 0 ? (
+        <p className="text-center text-slate-500 py-8 text-sm">ไม่พบคุณแม่ที่ตรงกับเงื่อนไขนี้</p>
+      ) : filter === "all" ? (
+        <>
+          <Group title="ต้องติดตาม" rows={needs} now={now} />
+          <Group title="ไม่มีสัญญาณที่ต้องติดตาม" rows={shown.filter((r) => r.severity === 0)} now={now} />
+        </>
+      ) : (
+        <Group rows={shown} now={now} />
+      )}
+    </div>
   );
 }

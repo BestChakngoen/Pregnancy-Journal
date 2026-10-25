@@ -105,6 +105,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-scroll-lock
             className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50"
             onClick={onClose}
           />
@@ -130,7 +131,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="px-6 pt-4 pb-4 overflow-y-auto flex-1 flex flex-col gap-5">
+            <form onSubmit={handleSave} className="px-6 pt-4 pb-4 overflow-y-auto overscroll-contain flex-1 flex flex-col gap-5">
               
               <div>
                 <label className={labelClasses}>

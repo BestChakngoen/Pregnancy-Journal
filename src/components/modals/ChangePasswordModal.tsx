@@ -94,6 +94,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-scroll-lock
             className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50"
             onClick={handleClose}
           />
@@ -119,7 +120,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="px-6 pt-4 pb-6 pb-safe overflow-y-auto flex flex-col gap-5">
+            <form onSubmit={handleSubmit} className="px-6 pt-4 pb-6 pb-safe overflow-y-auto overscroll-contain flex flex-col gap-5">
               <div>
                 <label htmlFor="current-password" className={labelClasses}>
                   <KeyRound className="w-4 h-4 text-pink-500" />
