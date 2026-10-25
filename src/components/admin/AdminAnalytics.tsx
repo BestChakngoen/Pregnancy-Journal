@@ -4,11 +4,12 @@ import dynamic from "next/dynamic";
 import { AlertOctagon, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { CHART_COLORS, type Analytics } from "@/lib/analytics";
 import { ASSESSMENT_QUESTIONS, RISK_LABEL, SATISFACTION_QUESTIONS, type RiskLevel } from "@/lib/questions";
+import { cn } from "@/lib/utils";
 
-// กล่องกราฟสูงคงที่ จึงไม่กระโดดตอนโหลด
+// ระหว่างโหลดไม่ต้องมี placeholder ของตัวเอง: ChartBox จองความสูงไว้แล้ว จึงไม่กระโดดตอนโหลด
 const charts = () => import("@/components/charts/AdminCharts");
-const ScoreHistogram = dynamic(() => charts().then((m) => m.ScoreHistogram), { ssr: false, loading: () => <div className="h-[200px]" /> });
-const BPTrendChart = dynamic(() => charts().then((m) => m.BPTrendChart), { ssr: false, loading: () => <div className="h-[220px]" /> });
+const ScoreHistogram = dynamic(() => charts().then((m) => m.ScoreHistogram), { ssr: false, loading: () => null });
+const BPTrendChart = dynamic(() => charts().then((m) => m.BPTrendChart), { ssr: false, loading: () => null });
 
 const fmt = (n: number | null) => (n === null ? "–" : n.toFixed(1));
 
@@ -18,9 +19,9 @@ export const RISK_STATUS: Record<RiskLevel, { color: string; Icon: typeof CheckC
   high: { color: CHART_COLORS.critical, Icon: AlertOctagon },
 };
 
-function Tile({ label, value, caption, children }: { label: React.ReactNode; value: string; caption?: React.ReactNode; children?: React.ReactNode }) {
+function Tile({ label, value, caption, children, className }: { label: React.ReactNode; value: string; caption?: React.ReactNode; children?: React.ReactNode; className?: string }) {
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col min-w-0">
+    <div className={cn("bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col min-w-0", className)}>
       <span className="text-xs text-slate-500 flex items-center gap-1">{label}</span>
       <span className="text-2xl font-semibold text-slate-800 mt-1">{value}</span>
       {caption && <span className="text-xs text-slate-500 mt-0.5">{caption}</span>}
@@ -29,15 +30,24 @@ function Tile({ label, value, caption, children }: { label: React.ReactNode; val
   );
 }
 
-function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function Card({ title, subtitle, children, className }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 min-w-0 break-inside-avoid">
+    <section className={cn("bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 min-w-0 break-inside-avoid", className)}>
       <div>
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
         {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </section>
+  );
+}
+
+// กราฟยืดเต็มความสูงที่การ์ดเหลือ (เมื่อการ์ดข้างเคียงในแถวสูงกว่า) แต่ไม่เตี้ยกว่า min และไม่สูงเกิน 360px
+function ChartBox({ min, children }: { min: number; children: React.ReactNode }) {
+  return (
+    <div className="relative flex-1 w-full" style={{ minHeight: min, maxHeight: 360 }}>
+      <div className="absolute inset-0">{children}</div>
+    </div>
   );
 }
 
@@ -74,7 +84,8 @@ export function Legend({ items }: { items: { label: string; color: string; shape
 
 export function TableView({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
   return (
-    <details className="text-xs text-slate-600 print:hidden">
+    // -my-2: ดึงปุ่มชิดกราฟ/ขอบการ์ด (พื้นที่กดยังสูง 44px ซ้อนทับเฉพาะขอบว่างของกราฟและ padding การ์ด)
+    <details className="text-xs text-slate-600 print:hidden -my-2">
       <summary className="cursor-pointer select-none min-h-[44px] flex items-center">ดูเป็นตาราง</summary>
       <table className="w-full tabular-nums">
         <thead>
@@ -99,14 +110,14 @@ const Empty = ({ children }: { children: React.ReactNode }) => <p className="tex
 export default function AdminAnalytics({ a }: { a: Analytics }) {
   const gain = a.pairedGain;
 
+  // ผัง 2 คอลัมน์: แถวบน = ผลการเรียนรู้ (คะแนน + ความพึงพอใจ), แถวกลาง = สุขภาพมารดา (ความเสี่ยง + ความดัน), แถวล่าง = การบันทึก
+  // การ์ดในแถวเดียวกันสูงเท่ากัน และกราฟยืดเติมความสูงที่เหลือ (ChartBox) จึงไม่มีช่องว่างในการ์ดหรือข้างการ์ด
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 items-start">
-      {/* KPI */}
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {/* KPI: มือถือ = ผู้ป่วย|พึงพอใจ (ค่าสั้น) แถวเดียวกัน, คะแนนความรู้ (ข้อความยาว) เต็มแถวถัดมา */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:col-span-2">
-        <div className="col-span-2 md:col-span-1 grid">
-          <Tile label="ผู้ป่วยทั้งหมด" value={String(a.patientCount)} caption="กรอกข้อมูลส่วนตัวแล้ว" />
-        </div>
-        <Tile label="คะแนนความรู้เฉลี่ย" value={`${fmt(a.preAvg)} → ${fmt(a.postAvg)}`} caption={`ก่อน → หลังเรียน (เต็ม ${a.scoreTotal})`}>
+        <Tile label="ผู้ป่วยทั้งหมด" value={String(a.patientCount)} caption="กรอกข้อมูลส่วนตัวแล้ว" />
+        <Tile className="col-span-2 order-last md:col-span-1 md:order-none" label="คะแนนความรู้เฉลี่ย" value={`${fmt(a.preAvg)} → ${fmt(a.postAvg)}`} caption={`ก่อน → หลังเรียน (เต็ม ${a.scoreTotal})`}>
           {gain !== null && (
             <span className="text-xs font-semibold mt-1" style={{ color: gain >= 0 ? CHART_COLORS.gainText : CHART_COLORS.critical }}>
               {gain >= 0 ? "+" : ""}{gain.toFixed(1)} คะแนน · {a.pairedCount} คนที่ทำครบ
@@ -125,9 +136,22 @@ export default function AdminAnalytics({ a }: { a: Analytics }) {
               { label: `ก่อนเรียน (${a.preCount} คน)`, color: CHART_COLORS.pre, shape: "rect" },
               { label: `หลังเรียน (${a.postCount} คน)`, color: CHART_COLORS.post, shape: "rect" },
             ]} />
-            <ScoreHistogram data={a.scoreHistogram} />
+            <ChartBox min={200}><ScoreHistogram data={a.scoreHistogram} /></ChartBox>
             <TableView head={["คะแนน", "ก่อนเรียน (คน)", "หลังเรียน (คน)"]} rows={a.scoreHistogram.map((r) => [r.score, r.pre, r.post])} />
           </>
+        )}
+      </Card>
+
+      <Card title="ความพึงพอใจรายข้อ" subtitle={`คะแนนเฉลี่ย (เต็ม 5) · ตอบแล้ว ${a.satisfactionRespondents} คน`}>
+        {a.satisfactionRespondents === 0 ? (
+          <Empty>ยังไม่มีผู้ตอบแบบประเมินความพึงพอใจ</Empty>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {SATISFACTION_QUESTIONS.map((q) => {
+              const s = a.satisfactionByQuestion.get(q.id);
+              return <HBar key={q.id} label={`${q.id}. ${q.text}`} value={s?.avg ?? 0} max={5} color={CHART_COLORS.post} display={s ? s.avg.toFixed(1) : "–"} />;
+            })}
+          </ul>
         )}
       </Card>
 
@@ -168,14 +192,15 @@ export default function AdminAnalytics({ a }: { a: Analytics }) {
               { label: "ตัวบน (SYS)", color: CHART_COLORS.systolic, shape: "line" },
               { label: "ตัวล่าง (DIA)", color: CHART_COLORS.diastolic, shape: "line" },
             ]} />
-            <BPTrendChart data={a.bpDaily} />
+            <ChartBox min={220}><BPTrendChart data={a.bpDaily} /></ChartBox>
             <TableView head={["วันที่", "SYS เฉลี่ย", "DIA เฉลี่ย", "จำนวนครั้ง"]} rows={a.bpDaily.map((d) => [d.label, d.systolic, d.diastolic, d.count])} />
           </>
         )}
       </Card>
 
-      <Card title={`การบันทึกสุขภาพ (${a.bpDays} วันล่าสุด)`} subtitle={`จำนวนผู้ป่วยที่บันทึก จากทั้งหมด ${a.patientCount} คน`}>
-        <ul className="flex flex-col gap-3">
+      {/* แถบเต็มความกว้าง: 3 รายการเรียงเป็น 3 คอลัมน์บนจอกว้าง แทนการกองซ้อนในการ์ดครึ่งจอที่มีช่องว่างเหลือ */}
+      <Card className="md:col-span-2" title={`การบันทึกสุขภาพ (${a.bpDays} วันล่าสุด)`} subtitle={`จำนวนผู้ป่วยที่บันทึก จากทั้งหมด ${a.patientCount} คน`}>
+        <ul className="flex flex-col gap-3 md:grid md:grid-cols-3 md:gap-6">
           {([
             ["ความดันโลหิต", a.recording.bp, "ครั้ง"],
             ["น้ำหนัก", a.recording.weight, "ครั้ง"],
@@ -185,19 +210,6 @@ export default function AdminAnalytics({ a }: { a: Analytics }) {
               display={`${r.patients} คน · ${r.records} ${unit}`} />
           ))}
         </ul>
-      </Card>
-
-      <Card title="ความพึงพอใจรายข้อ" subtitle={`คะแนนเฉลี่ย (เต็ม 5) · ตอบแล้ว ${a.satisfactionRespondents} คน`}>
-        {a.satisfactionRespondents === 0 ? (
-          <Empty>ยังไม่มีผู้ตอบแบบประเมินความพึงพอใจ</Empty>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {SATISFACTION_QUESTIONS.map((q) => {
-              const s = a.satisfactionByQuestion.get(q.id);
-              return <HBar key={q.id} label={`${q.id}. ${q.text}`} value={s?.avg ?? 0} max={5} color={CHART_COLORS.post} display={s ? s.avg.toFixed(1) : "–"} />;
-            })}
-          </ul>
-        )}
       </Card>
     </div>
   );

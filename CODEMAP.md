@@ -38,6 +38,7 @@
 | ข้อสอบ Pre-test / Post-test (คำถาม, เฉลย) | `src/components/quiz/Quiz.tsx` (`QUESTIONS`) — หน้า `pre-test/page.tsx` กับ `post-test/page.tsx` เป็นแค่ wrapper ส่ง `type` + `title` |
 | แบบประเมินความพึงพอใจ (8 ข้อ, 1–5 ดาว, บันทึกลง Firestore) | คำถาม: `src/lib/questions.ts` (`SATISFACTION_QUESTIONS`) · หน้า: `src/app/satisfaction/page.tsx` |
 | ส่วนวิเคราะห์ในหน้า Admin (KPI, กราฟคะแนนก่อน/หลัง, ความเสี่ยง, ความดันรายวัน, ความพึงพอใจ, รายคน) | คำนวณ: `src/lib/analytics.ts` (`buildAnalytics`) · UI: `src/components/admin/AdminAnalytics.tsx`, `PatientList.tsx` · กราฟ: `src/components/charts/AdminCharts.tsx` (lazy) |
+| กดค้างที่กราฟบนมือถือเพื่อดูค่า ปล่อยแล้วซ่อน (ทุกกราฟ: admin + ประวัติสุขภาพของคุณแม่) | `src/components/charts/HoldToInspect.tsx` (ห่อ `<ResponsiveContainer>`; ปรับเวลากดค้างที่ `HOLD_MS`) |
 | ศูนย์ความรู้ (ลำดับขั้น 1-2-3) | `src/components/sections/EducationSection.tsx` |
 | E-book (iframe Heyzine, บังคับแนวนอน) | `src/app/education/ebook/page.tsx` (URL อยู่ใน `<iframe src>`) + ปุ่มเปิดใน `sections/EducationSection.tsx` |
 | วิดีโอ + สรุปเนื้อหา | `src/app/videos/page.tsx` · ไฟล์วิดีโอ `public/videos/Video.mp4` · poster `public/images/lemon.jpg` |
