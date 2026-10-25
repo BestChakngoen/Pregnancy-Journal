@@ -15,26 +15,11 @@ export default function HomeSection() {
   const [isBPLoggerOpen, setIsBPLoggerOpen] = useState(false);
   const { user, isLoaded, loginOrSaveUser, logout } = useUserStore();
 
+  // วันกำหนดคลอดของแต่ละคนไม่เหมือนกัน: เก็บค่าที่ตั้งไว้เฉยๆ ไม่ใช้คำนวณอายุครรภ์
+  // (อายุครรภ์ใช้ค่าที่กรอกไว้ แก้ได้ที่โปรไฟล์ > ข้อมูลส่วนตัว)
   const handleEddChange = (newEdd: string) => {
     if (!user) return;
-    let newWeeks = user.gestationalWeeks;
-    if (newEdd) {
-      const eddDate = new Date(newEdd);
-      const today = new Date();
-      eddDate.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      const diffTime = eddDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const daysElapsed = 280 - diffDays;
-      let calculatedWeeks = Math.floor(daysElapsed / 7);
-      calculatedWeeks = Math.max(1, Math.min(42, calculatedWeeks));
-      newWeeks = calculatedWeeks.toString();
-    }
-    loginOrSaveUser({
-      ...user,
-      expectedDeliveryDate: newEdd,
-      gestationalWeeks: newWeeks
-    });
+    loginOrSaveUser({ ...user, expectedDeliveryDate: newEdd });
   };
 
   useEffect(() => {

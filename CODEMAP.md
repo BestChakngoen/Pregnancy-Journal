@@ -23,7 +23,7 @@
 | ชื่อแท็บ / meta | `src/app/layout.tsx` (`metadata`) |
 | หน้าแรก (สวัสดี, วงแหวนสัปดาห์, เมนูลัด, ทิปส์ประจำวัน) | `src/components/sections/HomeSection.tsx` |
 | ทิปส์ประจำวัน (หน้าหลัก: สลับข้อเองทุก 8 วินาที เริ่มจากข้อสุ่ม ไม่มีปุ่มควบคุม/หยุด; แก้ข้อความหรือความเร็วที่ไฟล์ข้อมูล) | เนื้อหา + ตัวแปรเวลา + ฟังก์ชันเลือกข้อ `src/lib/dailyTips.ts` (`DAILY_TIPS`, `TIP_INTERVAL_MS`) · การ์ด `src/components/ui/DailyTipCard.tsx` (ทุกข้อซ้อนในกริดเดียว การ์ดสูงเท่าข้อที่ยาวสุด + crossfade; ปิดอนิเมชันเมื่อผู้ใช้ตั้ง "ลดการเคลื่อนไหว") |
-| คำนวณสัปดาห์จากวันกำหนดคลอด (EDD) | `src/components/sections/HomeSection.tsx` → `handleEddChange` |
+| ตั้งวันกำหนดคลอด (EDD) — เก็บค่าที่ตั้งเฉยๆ **ไม่คำนวณอายุครรภ์** (วันกำหนดคลอดแต่ละคนไม่เหมือนกัน; อายุครรภ์แก้ที่โปรไฟล์ > ข้อมูลส่วนตัว) | `src/components/sections/HomeSection.tsx` → `handleEddChange` |
 | วงแหวนอายุครรภ์ (40 สัปดาห์, input วันคลอด) | `src/components/ui/AnimatedRing.tsx` |
 | หน้าสมัคร/เข้าสู่ระบบด้วยชื่อ + รหัสผ่าน (Firebase Auth) | `src/app/login/page.tsx` (`nameToEmail`, `errorMessage`) |
 | ฟอร์มข้อมูลส่วนตัวหลังล็อกอิน (อายุ, อายุครรภ์, Gravida) | `src/app/onboarding/page.tsx` |
@@ -83,7 +83,7 @@
 | ข้อมูล | ที่เก็บ | เขียนโดย | อ่านโดย |
 |---|---|---|---|
 | โปรไฟล์ (`UserProfile`) | localStorage `bumply_user` + Firestore `users/{uid}` | `userStore.loginOrSaveUser` (local), onboarding / EditProfileModal (Firestore) | ทุกหน้าผ่าน `useUserStore()` |
-| วันกำหนดคลอด (EDD) | localStorage เท่านั้น (ใน `bumply_user`) | `page.tsx` → `handleEddChange` | `AnimatedRing` |
+| วันกำหนดคลอด (EDD) | localStorage เท่านั้น (ใน `bumply_user`) | `sections/HomeSection.tsx` → `handleEddChange` | `AnimatedRing` |
 | ความดัน (ส่วนบันทึกสุขภาพ) | localStorage `bumply_tracking_data` (ค่าล่าสุด) + Firestore `users/{uid}/bloodPressures` | `TrackingModals` → `trackingStore.saveBloodPressure` → `lib/healthLogs.ts` (แก้ไข = ทับรายการเดิม) | `sections/HealthLogSection.tsx`, `TrackingSection.tsx`, admin |
 | น้ำหนัก, ลูกดิ้น | localStorage (ค่าล่าสุด/ยอดวันนี้) + Firestore `users/{uid}/weights`, `users/{uid}/kicks/{YYYY-MM-DD}` (`increment`) | `trackingStore` → `lib/healthLogs.ts` | `sections/HealthLogSection.tsx`, `TrackingSection.tsx`, admin |
 | ความดัน (หน้าแรก) | Firestore `users/{uid}/bloodPressures` | `BloodPressureLogger` → `lib/healthLogs.ts` | `sections/TrackingSection.tsx` (30 รายการล่าสุด), admin |
