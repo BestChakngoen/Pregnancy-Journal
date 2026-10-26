@@ -2,10 +2,11 @@
 
 import { useId, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { AlertOctagon, CheckCircle2, ChevronDown, Clock, CircleDashed, Search } from "lucide-react";
+import { AlertOctagon, CheckCircle2, ChevronDown, Clock, CircleDashed, Search, Trash2 } from "lucide-react";
 import { CHART_COLORS, INACTIVE_DAYS, baselinePre, buildPatientRows, daysAgo, type HealthData, type PatientDoc, type PatientRow, type ScoreResult } from "@/lib/analytics";
 import { ASSESSMENT_QUESTIONS, RISK_LABEL } from "@/lib/questions";
 import { Legend, TableView } from "@/components/admin/AdminAnalytics";
+import DeletePatientDialog from "@/components/admin/DeletePatientDialog";
 import { cn } from "@/lib/utils";
 
 // กราฟชุดเดียวกับภาพรวม (โหลดแยกผ่าน next/dynamic) — กล่องสูงคงที่ จึงไม่กระโดดตอนโหลด
@@ -77,8 +78,11 @@ function Detail({ title, empty, children }: { title: string; empty: boolean; chi
   );
 }
 
-function PatientItem({ r, now }: { r: PatientRow; now: Date }) {
+type DeleteHandler = (uid: string) => Promise<void>;
+
+function PatientItem({ r, now, onDelete }: { r: PatientRow; now: Date; onDelete?: DeleteHandler }) {
   const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const panelId = useId();
   const { p, latestBP } = r;
   const latestWeight = r.weights[r.weights.length - 1];
@@ -173,25 +177,41 @@ function PatientItem({ r, now }: { r: PatientRow; now: Date }) {
               <TableView head={["วันที่", "ครั้ง"]} rows={r.kicks.slice(-14).reverse().map((k) => [shortDate(`${k.date}T00:00:00`), k.count])} />
             </Detail>
           </div>
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => setDeleting(true)}
+              className="self-start min-h-[44px] px-4 rounded-xl text-sm font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center gap-2 print:hidden"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+              ลบบัญชีผู้ใช้
+            </button>
+          )}
         </div>
+      )}
+
+      {deleting && onDelete && (
+        <DeletePatientDialog name={p.name?.trim() || p.id} onConfirm={() => onDelete(p.id)} onClose={() => setDeleting(false)} />
       )}
     </li>
   );
 }
 
-function Group({ title, rows, now }: { title?: string; rows: PatientRow[]; now: Date }) {
+function Group({ title, rows, now, onDelete }: { title?: string; rows: PatientRow[]; now: Date; onDelete?: DeleteHandler }) {
   if (rows.length === 0) return null;
   return (
     <section className="bg-white rounded-2xl border border-slate-200/70 px-4 md:px-5">
       {title && <h2 className="pt-4 text-sm font-semibold text-slate-700">{title} <span className="text-slate-500 font-normal tabular-nums">· {rows.length} คน</span></h2>}
       <ul className="divide-y divide-slate-100">
-        {rows.map((r) => <PatientItem key={r.p.id} r={r} now={now} />)}
+        {rows.map((r) => <PatientItem key={r.p.id} r={r} now={now} onDelete={onDelete} />)}
       </ul>
     </section>
   );
 }
 
-export default function PatientList({ data, now }: { data: HealthData; now: Date }) {
+// onDelete ไม่ส่งมา = ไม่แสดงปุ่มลบ (โหมดตัวอย่าง)
+export default function PatientList({ data, now, onDelete }: { data: HealthData; now: Date; onDelete?: DeleteHandler }) {
   const rows = useMemo(() => buildPatientRows(data, now), [data, now]);
   const [filter, setFilter] = useState<FilterId>("all");
   const [query, setQuery] = useState("");
@@ -247,11 +267,11 @@ export default function PatientList({ data, now }: { data: HealthData; now: Date
         <p className="text-center text-slate-500 py-8 text-sm">ไม่พบคุณแม่ที่ตรงกับเงื่อนไขนี้</p>
       ) : filter === "all" ? (
         <>
-          <Group title="ต้องติดตาม" rows={needs} now={now} />
-          <Group title="ไม่มีสัญญาณที่ต้องติดตาม" rows={shown.filter((r) => r.severity === 0)} now={now} />
+          <Group title="ต้องติดตาม" rows={needs} now={now} onDelete={onDelete} />
+          <Group title="ไม่มีสัญญาณที่ต้องติดตาม" rows={shown.filter((r) => r.severity === 0)} now={now} onDelete={onDelete} />
         </>
       ) : (
-        <Group rows={shown} now={now} />
+        <Group rows={shown} now={now} onDelete={onDelete} />
       )}
     </div>
   );

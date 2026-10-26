@@ -7,38 +7,13 @@ import { ChevronRight, User, KeyRound, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/lib/userStore";
 import { db } from "@/lib/firebase";
-import { auth, nameToEmail } from "@/lib/auth";
+import { MAX_NAME_BYTES, auth, authErrorMessage, nameToEmail } from "@/lib/auth";
 import { doc, getDoc } from "firebase/firestore/lite";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
-
-const MAX_NAME_BYTES = 30;
-
-const errorMessage = (code: string) => {
-  switch (code) {
-    case "auth/email-already-in-use":
-      return "ชื่อนี้ถูกใช้แล้ว กรุณาเลือกชื่ออื่น หรือเข้าสู่ระบบ";
-    case "auth/invalid-credential":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
-      return "ชื่อหรือรหัสผ่านไม่ถูกต้อง";
-    case "auth/weak-password":
-      return "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
-    case "auth/password-does-not-meet-requirements":
-      return "รหัสผ่านไม่ผ่านเงื่อนไขความปลอดภัย กรุณาตั้งให้ยาวขึ้นและผสมตัวอักษรกับตัวเลข";
-    case "auth/too-many-requests":
-      return "ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่";
-    case "auth/network-request-failed":
-      return "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้";
-    case "auth/operation-not-allowed":
-      return "ระบบยังไม่เปิดใช้การเข้าสู่ระบบด้วยรหัสผ่าน (ผู้ดูแลต้องเปิดใน Firebase Console)";
-    default:
-      return "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง";
-  }
-};
 
 export default function Login() {
   const router = useRouter();
@@ -105,7 +80,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error("Auth error:", err);
-      setError(errorMessage((err as { code?: string }).code ?? ""));
+      setError(authErrorMessage((err as { code?: string }).code ?? ""));
       setIsLoading(false);
     }
   };

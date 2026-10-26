@@ -13,6 +13,7 @@ import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import PatientList from "@/components/admin/PatientList";
 import { buildAnalytics, type HealthData, type PatientDoc } from "@/lib/analytics";
 import { DEMO_ADMINS, buildDemoData } from "@/lib/demoData";
+import { deletePatient } from "@/lib/userAdmin";
 import { cn } from "@/lib/utils";
 
 const noopSubscribe = () => () => {};
@@ -113,6 +114,17 @@ export default function AdminPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // ลบใน Firestore แล้วตัดออกจากข้อมูลที่โหลดไว้เลย ไม่ต้องดึงบันทึกของทุกคนใหม่
+  const handleDeletePatient = async (uid: string) => {
+    await deletePatient(uid);
+    setData((d) => ({
+      patients: d.patients.filter((p) => p.id !== uid),
+      bp: d.bp.filter((x) => x.uid !== uid),
+      weights: d.weights.filter((x) => x.uid !== uid),
+      kicks: d.kicks.filter((x) => x.uid !== uid),
+    }));
   };
 
   const handleLogout = async () => {
@@ -220,7 +232,7 @@ export default function AdminPage() {
         </div>
       );
     }
-    return tab === "patients" ? <PatientList data={shown} now={dataAt} /> : <AdminAnalytics a={buildAnalytics(shown, dataAt)} />;
+    return tab === "patients" ? <PatientList data={shown} now={dataAt} onDelete={isDemo ? undefined : handleDeletePatient} /> : <AdminAnalytics a={buildAnalytics(shown, dataAt)} />;
   };
 
   return (

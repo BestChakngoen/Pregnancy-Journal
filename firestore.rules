@@ -108,29 +108,30 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // เจ้าของลบข้อมูลตัวเองไม่ได้ — admin ทุกคนลบบัญชีผู้ใช้ (โปรไฟล์ + log) ได้จากหน้า /admin
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && validProfile(request.resource.data);
       allow update: if isOwner(userId) && validProfile(request.resource.data) && firstResultsKept(resource.data, request.resource.data);
-      allow delete: if false;
+      allow delete: if isAdmin();
 
       match /bloodPressures/{logId} {
         allow read: if isOwner(userId) || isAdmin();
-        // update = แก้ค่าที่บันทึกผิดของตัวเอง, ลบไม่ได้
+        // update = แก้ค่าที่บันทึกผิดของตัวเอง
         allow create, update: if isOwner(userId) && validBP(request.resource.data);
-        allow delete: if false;
+        allow delete: if isAdmin();
       }
 
       match /weights/{logId} {
         allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId) && validWeight(request.resource.data);
-        allow delete: if false;
+        allow delete: if isAdmin();
       }
 
       match /kicks/{dayId} {
         allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId) && validKicks(request.resource.data, dayId);
-        allow delete: if false;
+        allow delete: if isAdmin();
       }
     }
   }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore/lite";
 import { Loader2, ShieldPlus, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase";
+import { MAX_NAME_BYTES, authErrorMessage, createAccount } from "@/lib/auth";
 import { useAlertStore } from "@/lib/alertStore";
 
 interface AdminDoc {
@@ -22,6 +23,8 @@ export default function AdminManager({ myUid, demoAdmins }: { myUid: string; dem
   const [isLoading, setIsLoading] = useState(!demoAdmins);
   const [uid, setUid] = useState("");
   const [name, setName] = useState("");
+  const [createName, setCreateName] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const showAlert = useAlertStore.getState().showAlert;
@@ -76,6 +79,47 @@ export default function AdminManager({ myUid, demoAdmins }: { myUid: string; dem
     } catch (err) {
       console.error("Error adding admin:", err);
       showAlert({ type: "error", title: "เพิ่มผู้ดูแลไม่สำเร็จ", message: "ไม่มีสิทธิ์ หรือการเชื่อมต่อมีปัญหา" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // สร้างบัญชีล็อกอิน + สิทธิ์ผู้ดูแลในขั้นเดียว: ผู้ดูแลคนใหม่ไม่ต้องสมัครในแอปก่อน
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newName = createName.trim();
+    if (!newName || new TextEncoder().encode(newName).length > MAX_NAME_BYTES) {
+      showAlert({ type: "error", title: "ชื่อไม่ถูกต้อง", message: "ภาษาอังกฤษไม่เกิน 30 ตัว ภาษาไทยไม่เกิน 10 ตัว" });
+      return;
+    }
+
+    if (demoAdmins) {
+      setAdmins([...admins, { id: crypto.randomUUID().replaceAll("-", ""), name: newName }]);
+      setCreateName("");
+      setCreatePassword("");
+      showAlert({ type: "success", title: "สร้างผู้ดูแลแล้ว (โหมดตัวอย่าง)", message: "ยังไม่ได้บันทึกลงระบบจริง รีเฟรชหน้าแล้วรายการจะกลับเป็นเหมือนเดิม" });
+      return;
+    }
+
+    setIsSaving(true);
+    let newUid = "";
+    try {
+      newUid = await createAccount(newName, createPassword);
+      await setDoc(doc(db, "admins", newUid), { name: newName, addedBy: myUid, addedAt: new Date().toISOString() });
+      setCreateName("");
+      setCreatePassword("");
+      await fetchAdmins();
+      showAlert({ type: "success", title: "สร้างผู้ดูแลแล้ว", message: `ให้ ${newName} ล็อกอินที่หน้านี้ด้วยชื่อและรหัสผ่านที่ตั้งไว้` });
+    } catch (err) {
+      console.error("Error creating admin:", err);
+      // บัญชีสร้างแล้วแต่ตั้งสิทธิ์ไม่สำเร็จ: ให้ UID ไปลองใหม่ที่ฟอร์มด้านล่างได้ (ชื่อถูกใช้ไปแล้วสร้างซ้ำไม่ได้)
+      showAlert({
+        type: "error",
+        title: "สร้างผู้ดูแลไม่สำเร็จ",
+        message: newUid
+          ? `สร้างบัญชีแล้วแต่ตั้งสิทธิ์ไม่สำเร็จ ให้นำรหัส UID นี้ไปเพิ่มในฟอร์มด้านล่าง: ${newUid}`
+          : authErrorMessage((err as { code?: string }).code ?? ""),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -138,7 +182,28 @@ export default function AdminManager({ myUid, demoAdmins }: { myUid: string; dem
         </ul>
       )}
 
+      <form onSubmit={handleCreate} className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+        <p className="text-xs font-semibold text-slate-600">สร้างบัญชีผู้ดูแลใหม่</p>
+        <p className="text-xs text-slate-500">ตั้งชื่อและรหัสผ่านให้ผู้ดูแลคนใหม่ได้เลย ไม่ต้องสมัครในแอปก่อน แล้วแจ้งทั้งสองอย่างให้เขาไปล็อกอินที่หน้านี้</p>
+        <label className="text-xs font-semibold text-slate-600">
+          ชื่อผู้ดูแล (ใช้ล็อกอินและแสดงในรายชื่อ)
+          <input required autoComplete="off" className={`${inputClasses} mt-1`} value={createName} onChange={(e) => setCreateName(e.target.value)} />
+        </label>
+        <label className="text-xs font-semibold text-slate-600">
+          รหัสผ่าน (อย่างน้อย 6 ตัว)
+          <input required minLength={6} autoComplete="off" className={`${inputClasses} mt-1 font-mono`} value={createPassword} onChange={(e) => setCreatePassword(e.target.value)} />
+        </label>
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="w-full py-3 bg-slate-800 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+        >
+          {isSaving ? "กำลังสร้าง..." : "สร้างผู้ดูแล"}
+        </button>
+      </form>
+
       <form onSubmit={handleAdd} className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+        <p className="text-xs font-semibold text-slate-600">หรือเพิ่มจากบัญชีที่สมัครในแอปไว้แล้ว</p>
         <p className="text-xs text-slate-500">
           ให้ผู้ที่ต้องการเป็นผู้ดูแลสมัครบัญชีในแอป แล้วล็อกอินที่หน้านี้ จะเห็นรหัส UID ให้คัดลอกส่งมา
         </p>
