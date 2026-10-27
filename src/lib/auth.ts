@@ -1,6 +1,5 @@
 // แยก auth ออกจาก firebase.ts: หน้าหลักโหลด auth SDK เฉพาะตอนใช้จริง ผ่าน import("@/lib/auth")
-import { deleteApp, initializeApp } from "firebase/app";
-import { createUserWithEmailAndPassword, getAuth, inMemoryPersistence, initializeAuth, signOut, updateProfile } from "firebase/auth";
+import { getAuth, signOut } from "firebase/auth";
 import { app } from "@/lib/firebase";
 
 export const auth = getAuth(app);
@@ -11,26 +10,16 @@ export const MAX_NAME_BYTES = 30;
 
 // Firebase Auth ต้องใช้อีเมล แต่ผู้ใช้ล็อกอินด้วยชื่อ จึงแปลงชื่อ (lowercase) เป็นอีเมลภายใน
 // hex เพราะอีเมลรับตัวอักษรไทยไม่ได้ และ local part ยาวได้ไม่เกิน 64 ตัว
-export const nameToEmail = (name: string) => {
+const toEmail = (name: string, domain: string) => {
   const hex = Array.from(new TextEncoder().encode(name.toLowerCase()))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return `${hex}@momsafe.app`;
+  return `${hex}@${domain}`;
 };
 
-// สร้างบัญชีผ่าน Firebase app ตัวที่สอง (เก็บ session ในหน่วยความจำ) เพราะ createUser บน app หลัก
-// จะสลับ session ไปเป็นบัญชีใหม่ ทำให้ admin ที่กำลังล็อกอินอยู่หลุดออก — คืน uid ของบัญชีที่สร้าง
-export async function createAccount(name: string, password: string): Promise<string> {
-  const second = initializeApp(app.options, `create-account-${Date.now()}`);
-  try {
-    const secondAuth = initializeAuth(second, { persistence: inMemoryPersistence });
-    const { user } = await createUserWithEmailAndPassword(secondAuth, nameToEmail(name), password);
-    await updateProfile(user, { displayName: name });
-    return user.uid;
-  } finally {
-    await deleteApp(second);
-  }
-}
+// บัญชีผู้ใช้กับบัญชี admin อยู่คนละโดเมน: ชื่อไม่ชนกัน และ firestore.rules (isAdminAccount) ให้สิทธิ์ admin เฉพาะโดเมนหลัง
+export const nameToEmail = (name: string) => toEmail(name, "momsafe.app");
+export const adminNameToEmail = (name: string) => toEmail(name, "admin.momsafe.app");
 
 export const authErrorMessage = (code: string) => {
   switch (code) {

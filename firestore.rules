@@ -1,13 +1,24 @@
 rules_version = '2';
 
 // ข้อมูลผู้ใช้อยู่ที่ users/{uid} — uid มาจาก Firebase Auth ผู้ใช้ปลอมไม่ได้
-// admin = บัญชีที่มีเอกสาร admins/{uid} — คนแรกเพิ่มจาก Firebase Console, คนต่อไป admin เพิ่มจากหน้า /admin
+// admin = บัญชีโดเมน @admin.momsafe.app (แยกจากบัญชีผู้ใช้ @momsafe.app) ที่มีเอกสาร admins/{uid}
+// สมัครเป็น admin ได้ด้วยรหัสเชิญ invites/{key} เท่านั้น (ใช้ครั้งเดียว อายุ 48 ชม.) — admin สร้างรหัสเชิญจากหน้า /admin
+// รหัสเชิญแรกสร้างเองใน Firebase Console: เอกสาร invites/<hex 32 ตัว> มีฟิลด์ createdAt (timestamp = ตอนนี้)
 // path อื่นที่ไม่ได้เขียนไว้ถูกปฏิเสธทั้งหมด
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
-    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isAdminAccount() { return signedIn() && request.auth.token.email.matches('.*@admin[.]momsafe[.]app'); }
+    function isAdmin() { return isAdminAccount() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+
+    // รหัสเชิญต้องมีอยู่ ยังไม่หมดอายุ (48 ชม. นับจาก createdAt ต้องตรงกับ INVITE_HOURS ใน src/lib/userAdmin.ts) และถูกลบในชุดเขียนเดียวกัน
+    function inviteUsable(key) {
+      let path = /databases/$(database)/documents/invites/$(key);
+      return exists(path)
+        && get(path).data.createdAt + duration.value(48, 'h') > request.time
+        && !existsAfter(path);
+    }
 
     function optString(d, key, max) {
       return !(key in d) || (d[key] is string && d[key].size() <= max);
@@ -67,8 +78,6 @@ service cloud.firestore {
         && d.isHighRisk == (d.systolic >= 140 || d.diastolic >= 90);
     }
 
-    // admin เพิ่ม/ลบ admin คนอื่นจากหน้า /admin ได้ แต่ลบตัวเองไม่ได้ จึงเหลือ admin อย่างน้อย 1 คนเสมอ
-    // admin คนแรกเพิ่มจาก Firebase Console
     function validWeight(d) {
       return d.keys().hasOnly(['kg', 'timestamp'])
         && d.kg is number && d.kg >= 20 && d.kg <= 250
@@ -83,18 +92,34 @@ service cloud.firestore {
         && d.updatedAt is string && d.updatedAt.size() <= 40;
     }
 
+    // admin ถอน admin คนอื่นจากหน้า /admin ได้ แต่ลบตัวเองไม่ได้ จึงเหลือ admin อย่างน้อย 1 คนเสมอ
     match /admins/{userId} {
       allow get: if isOwner(userId) || isAdmin(); // ให้หน้า /admin เช็คสิทธิ์ของตัวเองได้
       allow list: if isAdmin();
-      allow create: if isAdmin()
-        && userId.size() <= 128
-        && request.resource.data.keys().hasOnly(['name', 'addedBy', 'addedAt'])
+      // สร้างได้เฉพาะเอกสารของตัวเอง ด้วยบัญชีโดเมน admin + รหัสเชิญที่ใช้ได้ (ต้อง batch ลบ invites/{inviteKey} พร้อมกัน)
+      allow create: if isAdminAccount() && userId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['name', 'addedAt', 'inviteKey'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
-        && request.resource.data.addedBy == request.auth.uid
-        && request.resource.data.addedAt is string && request.resource.data.addedAt.size() <= 40;
+        && request.resource.data.addedAt is string && request.resource.data.addedAt.size() <= 40
+        && request.resource.data.inviteKey is string && inviteUsable(request.resource.data.inviteKey);
       allow delete: if isAdmin() && userId != request.auth.uid;
       allow update: if false;
+    }
+
+    // รหัสเชิญ: id เอกสาร = รหัสเชิญ (hex 32 ตัว สุ่มฝั่ง client) — admin เท่านั้นที่อ่าน/สร้างได้
+    // ผู้รับรหัสเชิญไม่ต้องอ่าน แค่ลบรหัสเชิญในชุดเดียวกับที่สร้าง admins/{uid} ของตัวเอง (inviteUsable ตรวจให้)
+    match /invites/{key} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && key.matches('[0-9a-f]{32}')
+        && request.resource.data.keys().hasOnly(['createdBy', 'createdAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin()
+        || (isAdminAccount() && existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid))
+            && getAfter(/databases/$(database)/documents/admins/$(request.auth.uid)).data.inviteKey == key);
     }
 
     // หน้า admin ดึงบันทึกสุขภาพของทุกคนทีเดียว (collection group query)

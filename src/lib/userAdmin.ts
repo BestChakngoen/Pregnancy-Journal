@@ -1,5 +1,30 @@
-import { collection, deleteDoc, doc, getDocs } from "firebase/firestore/lite";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { collection, deleteDoc, doc, getDocs, writeBatch } from "firebase/firestore/lite";
 import { db } from "@/lib/firebase";
+import { adminNameToEmail, auth } from "@/lib/auth";
+
+// ต้องตรงกับ 48 ชม. ใน inviteUsable (firestore.rules) — Rules เป็นตัวบังคับจริง ค่านี้ใช้แสดงเวลาหมดอายุ
+export const INVITE_HOURS = 48;
+
+// รหัสเชิญ = hex 32 ตัว (128 บิต) ตรงกับ key.matches ใน firestore.rules
+export const newInviteKey = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+
+// สมัคร admin ด้วยรหัสเชิญ: สร้างบัญชีโดเมน admin (ล็อกอินค้างในเครื่องนี้) แล้วสร้าง admins/{uid} + ลบรหัสเชิญในชุดเดียว
+// รหัสเชิญผิด/หมดอายุ/ถูกใช้แล้ว Rules ปฏิเสธ (permission-denied) → ลบบัญชีที่เพิ่งสร้างทิ้ง ไม่ให้ชื่อถูกจองค้าง
+export async function redeemAdminInvite(key: string, name: string, password: string): Promise<string> {
+  const { user } = await createUserWithEmailAndPassword(auth, adminNameToEmail(name), password);
+  try {
+    const batch = writeBatch(db);
+    batch.set(doc(db, "admins", user.uid), { name, addedAt: new Date().toISOString(), inviteKey: key });
+    batch.delete(doc(db, "invites", key));
+    await batch.commit();
+  } catch (err) {
+    await user.delete().catch(() => {});
+    throw err;
+  }
+  return user.uid;
+}
 
 const LOG_COLLECTIONS = ["bloodPressures", "weights", "kicks"];
 
